@@ -97,6 +97,11 @@ namespace aml_n {
       std::string show() const { return "block"; }
     };
 
+    struct lexeme_if_t {
+      static std::string regex() { return R"(if)"; }
+      std::string show() const { return "if"; }
+    };
+
     struct lexeme_set_t {
       static std::string regex() { return R"(set)"; }
       std::string show() const { return "set"; }
@@ -145,6 +150,7 @@ namespace aml_n {
       lexeme_func_t,
       lexeme_return_t,
       lexeme_block_t,
+      lexeme_if_t,
       lexeme_set_t,
       lexeme_call_t,
       lexeme_var_t,
@@ -179,6 +185,9 @@ namespace aml_n {
       }, {
         std::regex(lexeme_block_t::regex()),
         [](const std::string& str) { return lexeme_block_t{}; }
+      }, {
+        std::regex(lexeme_if_t::regex()),
+        [](const std::string& str) { return lexeme_if_t{}; }
       }, {
         std::regex(lexeme_set_t::regex()),
         [](const std::string& str) { return lexeme_set_t{}; }
@@ -321,7 +330,9 @@ namespace aml_n {
     // GRAMMAR
     // program: func+
     // func:    FUNC <name> expr
+    // expr:    RETURN expr
     // expr:    BLOCK expr+
+    // expr:    IF expr expr expr
     // expr:    SET <name> expr
     // expr:    CALL <name> arg*
     // expr:    INT <digit>
@@ -329,8 +340,10 @@ namespace aml_n {
 
     struct stmt_program_t;
     struct stmt_func_t;
+    struct stmt_return_t;
     struct stmt_expr_t;
     struct stmt_block_t;
+    struct stmt_if_t;
     struct stmt_set_t;
     struct stmt_call_t;
     struct stmt_var_t;
@@ -338,7 +351,9 @@ namespace aml_n {
 
     struct stmt_expr_t {
       using expr_t = std::variant<
+        std::shared_ptr<stmt_return_t>,
         std::shared_ptr<stmt_block_t>,
+        std::shared_ptr<stmt_if_t>,
         std::shared_ptr<stmt_set_t>,
         std::shared_ptr<stmt_call_t>,
         std::shared_ptr<stmt_var_t>,
@@ -352,6 +367,15 @@ namespace aml_n {
 
     struct stmt_block_t {
       std::vector<stmt_expr_t> stmt_exprs;
+
+      std::string show(size_t deep) const;
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
+    };
+
+    struct stmt_if_t {
+      stmt_expr_t stmt_expr_if;
+      stmt_expr_t stmt_expr_then;
+      stmt_expr_t stmt_expr_else;
 
       std::string show(size_t deep) const;
       void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
@@ -395,6 +419,13 @@ namespace aml_n {
       std::string show(size_t deep) const;
     };
 
+    struct stmt_return_t {
+      stmt_expr_t body = { };
+
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
+      std::string show(size_t deep) const;
+    };
+
     struct stmt_program_t {
       std::deque<stmt_func_t> funcs;
 
@@ -427,9 +458,23 @@ namespace aml_n {
     void stmt_expr_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       try {
+        stmt_return_t stmt_return;
+        stmt_return.parse(syntax_lisp_tree);
+        expr = std::make_shared<stmt_return_t>(stmt_return);
+        return;
+      } catch (const fatal_error_t&) { }
+
+      try {
         stmt_block_t stmt_block;
         stmt_block.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_block_t>(stmt_block);
+        return;
+      } catch (const fatal_error_t&) { }
+
+      try {
+        stmt_if_t stmt_if;
+        stmt_if.parse(syntax_lisp_tree);
+        expr = std::make_shared<stmt_if_t>(stmt_if);
         return;
       } catch (const fatal_error_t&) { }
 
@@ -490,6 +535,41 @@ namespace aml_n {
         stmt_expr.parse(nodes[i]);
         stmt_exprs.push_back(stmt_expr);
       }
+    }
+
+    std::string stmt_if_t::show(size_t deep) const {
+      std::string str;
+      str += lexeme_lp_t().show();
+      str += lexeme_if_t().show();
+      str += "\n";
+      str += indent(deep);
+      str += stmt_expr_if.show(deep + 1);
+      str += "\n";
+      str += indent(deep);
+      str += stmt_expr_then.show(deep + 1);
+      str += "\n";
+      str += indent(deep);
+      str += stmt_expr_else.show(deep + 1);
+      str += lexeme_rp_t().show();
+      return str;
+    }
+
+    void stmt_if_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("if: unexpected leaf");
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() != 4)
+        throw fatal_error_t("if: expected 4 nodes");
+
+      if (!nodes[0].is_leaf() || !std::get_if<lexeme_if_t>(&nodes[0].node))
+        throw fatal_error_t("if: expected lexeme_if_t");
+
+      stmt_expr_if.parse(nodes[1]);
+      stmt_expr_then.parse(nodes[2]);
+      stmt_expr_else.parse(nodes[3]);
     }
 
     std::string stmt_set_t::show(size_t deep) const {
@@ -638,6 +718,33 @@ namespace aml_n {
       name = std::get<lexeme_ident_t>(nodes[1].node).value;
 
       body.parse(nodes[2]);
+    }
+
+    std::string stmt_return_t::show(size_t deep) const {
+      std::string str;
+      str += lexeme_lp_t().show();
+      str += lexeme_return_t().show();
+      str += "\n";
+      str += indent(deep);
+      str += body.show(deep + 1);
+      str += lexeme_rp_t().show();
+      return str;
+    }
+
+    void stmt_return_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("return: unexpected leaf");
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() != 2)
+        throw fatal_error_t("return: expected 2 nodes");
+
+      if (!nodes[0].is_leaf() || !std::get_if<lexeme_return_t>(&nodes[0].node))
+        throw fatal_error_t("return: expected lexeme_return_t");
+
+      body.parse(nodes[1]);
     }
 
     std::string stmt_func_t::show(size_t deep) const {
@@ -1148,6 +1255,13 @@ int main() {
         (set ret (call sum (int 100) (int 101) (int 102)))
         (set ret (int 100))
         (int 3)))
+
+    (func min
+      (block
+        (set a (var x1))
+        (set b (var x2))
+        (set ret (if (call greater (var a) (var b)) (var a) (var b)))
+        (return (var ret))))
 
     (func main
       (block
