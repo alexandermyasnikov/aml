@@ -182,27 +182,24 @@ namespace aml_n {
     using namespace utils_n;
     using namespace lexical_analyzer_n;
 
-    struct lexeme_node_t;
-    struct lexeme_nodes_t;
+    struct syntax_lisp_tree_t {
+      using node_t = lexeme_t;
+      using nodes_t = std::deque<syntax_lisp_tree_t>;
 
-    using syntax_lisp_tree_t = std::variant<
-      lexeme_node_t,
-      lexeme_nodes_t>;
+      node_t  node  = lexeme_empty_t{};
+      nodes_t nodes = {};
 
-    struct lexeme_node_t {
-      lexeme_t node;
-    };
-
-    struct lexeme_nodes_t {
-      std::vector<syntax_lisp_tree_t> nodes;
+      bool is_leaf() const {
+        return !std::get_if<lexeme_empty_t>(&node);
+      }
     };
 
     syntax_lisp_tree_t process(const lexemes_t& lexemes) {
-      std::stack<lexeme_nodes_t> stack;
-      stack.push(lexeme_nodes_t{});
+      std::stack<syntax_lisp_tree_t> stack;
+      stack.push(syntax_lisp_tree_t{});
       for (const auto& lexeme : lexemes) {
         if (std::get_if<lexeme_lp_t>(&lexeme)) {
-          stack.push(lexeme_nodes_t{});
+          stack.push(syntax_lisp_tree_t{});
         } else if (std::get_if<lexeme_rp_t>(&lexeme)) {
           if (stack.empty())
             throw fatal_error("syntax_lisp_analyzer: unexpected ')'");
@@ -210,7 +207,7 @@ namespace aml_n {
           stack.pop();
           stack.top().nodes.push_back(top);
         } else {
-          stack.top().nodes.push_back(lexeme_node_t{lexeme});
+          stack.top().nodes.push_back(syntax_lisp_tree_t{.node = lexeme});
         }
       }
 
@@ -222,17 +219,17 @@ namespace aml_n {
 
     static std::string show(const syntax_lisp_tree_t& syntax_lisp_tree) {
       std::string str;
-      std::visit(overloaded {
-          [&str] (const lexeme_nodes_t &value) { 
-            str += "( ";
-            for (const auto& node : value.nodes) {
-              str += show(node) + " ";
-            }
-            str += ")";
-          },
-          [&str] (const lexeme_node_t  &value) { str = show_lexeme(value.node); },
-          [&str] (auto)                        { str = "(unknown)"; },
-          }, syntax_lisp_tree);
+
+      if (syntax_lisp_tree.is_leaf()) {
+        str += show_lexeme(syntax_lisp_tree.node);
+      } else {
+        str += "( ";
+        for (const auto& node : syntax_lisp_tree.nodes) {
+          str += show(node) + " ";
+        }
+        str += ")";
+      }
+
       return str;
     }
   }
@@ -750,7 +747,7 @@ int main() {
       (block
         (set res (add $1 $1 $2))
         (ret res)))
-    
+
     (func main
       (block
         (set tmp
