@@ -9,7 +9,7 @@
 #define DEBUG_LOGGER_TRACE_LA            DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_LA(...)             DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
-#define DEBUG_LOGGER_TRACE_SA            DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_TRACE_SA            // DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_SA(...)             DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_ICG           DEBUG_LOGGER("icg  ", logger_indent_aml_t::indent)
@@ -211,8 +211,6 @@ namespace aml_n {
     };
 
     lexemes_t process(const std::string& code) {
-      DEBUG_LOGGER_TRACE_LA;
-
       lexemes_t lexemes;
       std::string s{code};
       std::smatch m;
@@ -1010,33 +1008,19 @@ struct interpreter_t {
 
 
 
-int main() {
-  std::string code = R"ASM(
-    (func test
-      (block
-        (int 0)
-        (block (int 10) (block (int 100) ) (int 12))
-        (set ret (call sum (int 100) (int 101) (int 102)))
-        (set ret (int 100))
-        (int 3)))
+int main(int argc, char* argv[]) {
+  std::string code;
 
-    (func min
-      (block
-        (set a (arg 1))
-        (set b (arg 2))
-        (set ret (if (call greater (var a) (var b)) (var a) (var b)))
-        (return (var ret))))
+  if (argc < 2) {
+    std::cerr << "usage: ./<program> <code>" << std::endl;
+    return 1;
+  }
 
-    (func main
-      (block
-        (set tmp
-          (call sum
-            (call sum (int 1) (int 2))
-            (int 10)))
-        (call print (call ref (var tmp)))))
-  )ASM";
+  if (argc > 1) {
+    code = argv[1];
+  }
 
-  // std::cout << code << std::endl;
+  std::cout << code << std::endl;
 
   interpreter_t interpreter;
   interpreter.exec(code);
