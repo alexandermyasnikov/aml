@@ -324,7 +324,6 @@ namespace aml_n {
     using namespace utils_n;
     using namespace syntax_lisp_analyzer_n;
 
-    // TODO
     // GRAMMAR
     // program: func+
     // func:    FUNC <name> expr
@@ -384,7 +383,7 @@ namespace aml_n {
 
     struct stmt_set_t {
       std::string name = "<name>";
-      stmt_expr_t body = { };
+      stmt_expr_t body;
 
       std::string show(size_t deep) const;
       void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
@@ -421,14 +420,14 @@ namespace aml_n {
 
     struct stmt_func_t {
       std::string name = "<name>";
-      stmt_expr_t body = { };
+      stmt_expr_t body;
 
       void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
       std::string show(size_t deep) const;
     };
 
     struct stmt_return_t {
-      stmt_expr_t body = { };
+      stmt_expr_t body;
 
       void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
       std::string show(size_t deep) const;
@@ -855,179 +854,6 @@ namespace aml_n {
       } __attribute__((packed)) cmd_set;
     };
 
-    using instructions_t = std::vector<instruction_t>;
-
-    struct opcode_index_t {
-      uint8_t     offset;
-      uint8_t     index;
-      std::string name;
-    };
-
-    static inline std::vector<opcode_index_t> opcodes_table = {
-      {  0,  0, "SET"  },
-      {  0,  1, "AND"  },
-      {  0,  2, "OR"   },
-      {  0,  3, "XOR"  },
-      {  0,  4, "ADD"  },
-      {  0,  5, "SUB"  },
-      {  0,  6, "MULT" },
-      {  0,  7, "DIV"  },
-      {  0,  8, "LSH"  },
-      {  0,  9, "RSH"  },
-      // ...
-      {  0, 15, "OTH0" },
-      {  1,  0, "BR"   },
-      {  1,  1, "NOT"  },
-      {  1,  2, "LOAD" },
-      {  1,  3, "SAVE" },
-      {  1,  4, "MOV"  },
-      // ...
-      {  1, 15, "OTH1" },
-      {  2,  0, "CALL" },
-      // ...
-      {  2, 15, "OTH2" },
-      {  3,  0, "RET"  },
-      // ...
-    };
-
-    struct reg_index_t {
-      uint8_t     index;
-      std::string name;
-    };
-
-    static inline std::vector<reg_index_t> regs_table = {
-      {   0, "RI"  },   // instruction pointer
-      {   1, "RP"  },   // previous base pointer
-      {   2, "RB"  },   // base pointer
-      {   3, "RS"  },   // stack pointer
-      {   4, "RF"  },   // flags
-      {   5, "RT"  },   // tmp
-      {   6, "RC"  },   // const
-      {   7, "RA"  },   // args
-      {   8, "R1"  },
-      {   9, "R2"  },
-      {  10, "R3"  },
-      {  11, "R4"  },
-      {  12, "R5"  },
-      {  13, "R6"  },
-      {  14, "R7"  },
-      {  15, "R8"  },
-    };
-
-    using reg_value_t = int64_t;
-    using reg_uvalue_t = std::make_unsigned<reg_value_t>::type;
-
-    // INC1     Ra:      set(Rt, 1); INC(Ra, Rt);
-    // DEC1     Ra:      set(Rt, 1); DEC(Ra, Rt);
-    // SETF     Ra:      or(Rf, Rf, Ra);
-    // CLRF     Ra:      not(Rt, Rf); or(Rt, Rt, Ra); not(Rf, Rt);
-    // NEG      Ra:      set(Rt, 0); sub(Ra, Rt, Ra);
-    // PLOADI   Ra  I:   set(Rt, I); add(Rt, Rt, SP); load(Ra, Rt);
-    // PLOAD    Ra Rb:   add(Rt, Rb, SP); load(Ra, Rt);
-    // PSAVE    Ra Rb:   add(Rt, Rb, SP); save(Rt, Ra);
-    // INC      Ra Rb:   add(Ra, Ra, Rb);
-    // DEC      Ra Rb:   sub(Ra, Ra, Rb);
-
-    using functions_t = std::map<std::string, size_t>;
-
-    uint8_t opcode_index(uint8_t offset, const std::string& name) {
-      auto it = std::find_if(opcodes_table.begin(), opcodes_table.end(),
-          [offset, name](auto& opcode) { return opcode.offset == offset && opcode.name == name; });
-      if (it == opcodes_table.end()) {
-        throw fatal_error_t("unknown opcode");
-      }
-      return it->index;
-    }
-
-    std::string opcode_name(uint8_t offset, uint8_t index) {
-      auto it = std::find_if(opcodes_table.begin(), opcodes_table.end(),
-          [offset, index](auto& opcode) { return opcode.offset == offset && opcode.index == index; });
-      if (it == opcodes_table.end()) {
-        throw fatal_error_t("unknown opcode");
-      }
-      return it->name;
-    }
-
-    uint8_t reg_index(const std::string& name) {
-      auto it = std::find_if(regs_table.begin(), regs_table.end(),
-          [name](auto& reg) { return reg.name == name; });
-      if (it == regs_table.end()) {
-        throw fatal_error_t("unknown reg");
-      }
-      return it->index;
-    }
-
-    std::string reg_name(uint8_t index) {
-      auto it = std::find_if(regs_table.begin(), regs_table.end(),
-          [index](auto& reg) { return reg.index == index; });
-      if (it == regs_table.end()) {
-        throw fatal_error_t("unknown reg");
-      }
-      return it->name;
-    }
-
-    std::string print_instruction(instruction_t instruction) {
-      std::stringstream ss;
-
-      ss << std::hex << std::setfill('0') << std::setw(2 * sizeof(instruction.value))
-          << instruction.value << "   ";
-
-      if (instruction.cmd_set.op == opcode_index(0, "SET")) {
-        ss << opcode_name(0, instruction.cmd_set.op) << " "
-          << reg_name(instruction.cmd_set.rd) << " "
-          << (reg_value_t) instruction.cmd_set.val << " ";
-      } else {
-        if (instruction.cmd.op == opcode_index(0, "OTH0")) {
-          if (instruction.cmd.rd == opcode_index(1, "OTH1")) {
-            if (instruction.cmd.rs1 == opcode_index(2, "OTH2")) {
-                ss << opcode_name(3, instruction.cmd.rs2) << " ";
-            } else {
-              ss << opcode_name(2, instruction.cmd.rs1) << " "
-                << reg_name(instruction.cmd.rs2) << " ";
-            }
-          } else {
-            ss << opcode_name(1, instruction.cmd.rd) << " "
-              << reg_name(instruction.cmd.rs1) << " "
-              << reg_name(instruction.cmd.rs2) << " ";
-          }
-        } else {
-          ss << opcode_name(0, instruction.cmd.op) << " "
-            << reg_name(instruction.cmd.rd) << " "
-            << reg_name(instruction.cmd.rs1) << " "
-            << reg_name(instruction.cmd.rs2) << " ";
-        }
-      }
-
-      return ss.str();
-    };
-
-    void macro_set(instructions_t& instructions, uint8_t rd, reg_value_t value) {
-      DEBUG_LOGGER_TRACE_ICG;
-      // DEBUG_LOGGER_ICG("rd: '%x'", rd);
-      // DEBUG_LOGGER_ICG("value: '%ld'", value);
-
-      uint8_t bytes[sizeof(value)];
-      memcpy(bytes, &value, sizeof(value));
-      std::reverse(std::begin(bytes), std::end(bytes));
-
-      size_t i = 0;
-      for (; i < sizeof(bytes); i++) {
-        if (bytes[i])
-          break;
-      }
-
-      instructions.push_back({ .cmd_set = { opcode_index(0, "SET"), rd, 0 } });
-
-      auto rt = reg_index("RT");
-
-      for (; i < sizeof(bytes); i++) {
-        instructions.push_back({ .cmd_set = { opcode_index(0, "SET"), rt, 8 } });
-        instructions.push_back({ .cmd     = { opcode_index(0, "LSH"), rd, rd, rt } });
-        instructions.push_back({ .cmd_set = { opcode_index(0, "SET"), rt, bytes[i] } });
-        instructions.push_back({ .cmd     = { opcode_index(0, "OR"),  rd, rd, rt } });
-      }
-    }
-
     void process(instructions_t& instructions, functions_t& functions, const cmds_str_t& cmds_str) {
       for (auto cmd_str : cmds_str) {
         if (cmd_str.at(0) == "SET" && cmd_str.size() == 3) {
@@ -1125,110 +951,6 @@ namespace aml_n {
 
     using namespace intermediate_code_generator_n;
 
-    using registers_set_t = reg_value_t[16];
-
-    std::string print_stack(const data_t& stack, registers_set_t* registers_set) {
-      std::stringstream ss;
-      ss << std::endl;
-
-      for (uint8_t i = 0; i < 16; ++i) {
-        ss << reg_name(i) << "   " << std::hex << std::setfill('0') << std::setw(2 * sizeof(reg_value_t))
-          << (*registers_set)[i] << std::endl;
-      }
-
-      ss << "size: " << (reinterpret_cast<const uint8_t*>(registers_set) - reinterpret_cast<const uint8_t*>(stack.data())) << std::endl;
-
-      for (size_t i = (*registers_set)[reg_index("RB")]; i < (*registers_set)[reg_index("RS")]; ++i) {
-        ss << "stack data: " << std::hex << std::setfill('0') << std::setw(2 * sizeof(uint8_t))
-          << (uint64_t) stack.at(i) << std::endl;
-      }
-
-      return ss.str();
-    }
-
-    void exec_cmd3(const data_t& text, data_t& stack, registers_set_t*& registers_set, instruction_t instruction) {
-      if (instruction.cmd.rs2 == opcode_index(3, "RET")) {
-        if (!(*registers_set)[reg_index("RP")])
-          throw fatal_error_t("exit TODO");
-        registers_set_t* registers_set_new = reinterpret_cast<registers_set_t*>(stack.data()
-            + (*registers_set)[reg_index("RP")] - sizeof(registers_set_t));
-        registers_set = registers_set_new;
-      } else {
-        throw fatal_error_t("unknown cmd3");
-      }
-    }
-
-    void exec_cmd2(const data_t& text, data_t& stack, registers_set_t*& registers_set, instruction_t instruction) {
-      if (instruction.cmd.rs1 == opcode_index(2, "CALL")) {
-        registers_set_t* registers_set_new = reinterpret_cast<registers_set_t*>(stack.data()
-            + (*registers_set)[reg_index("RS")]);
-        (*registers_set_new)[reg_index("RI")] = (*registers_set)[instruction.cmd.rs2];
-        (*registers_set_new)[reg_index("RP")] = (*registers_set)[reg_index("RB")];
-        (*registers_set_new)[reg_index("RB")] = (*registers_set)[reg_index("RS")] + sizeof(registers_set_t);
-        (*registers_set_new)[reg_index("RS")] = (*registers_set_new)[reg_index("RB")];
-        registers_set = registers_set_new;
-      } else if (instruction.cmd.rs1 == opcode_index(2, "OTH2")) {
-        exec_cmd3(text, stack, registers_set, instruction);
-      } else {
-        throw fatal_error_t("unknown cmd2");
-      }
-    }
-
-    void exec_cmd1(const data_t& text, data_t& stack, registers_set_t*& registers_set, instruction_t instruction) {
-      if (instruction.cmd.rd == opcode_index(1, "BR")) {
-        throw fatal_error_t("BR TODO");
-      } else if (instruction.cmd.rd == opcode_index(1, "NOT")) {
-        (*registers_set)[instruction.cmd.rs1] = ~(*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.rd == opcode_index(1, "LOAD")) {
-        throw fatal_error_t("LOAD TODO");
-      } else if (instruction.cmd.rd == opcode_index(1, "SAVE")) {
-        throw fatal_error_t("SAVE TODO");
-      } else if (instruction.cmd.rd == opcode_index(1, "MOV")) {
-        (*registers_set)[instruction.cmd.rs1] = (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.rd == opcode_index(1, "OTH1")) {
-        exec_cmd2(text, stack, registers_set, instruction);
-      } else {
-        throw fatal_error_t("unknown cmd1");
-      }
-    }
-
-    void exec_cmd0(const data_t& text, data_t& stack, registers_set_t*& registers_set, instruction_t instruction) {
-      if (instruction.cmd.op == opcode_index(0, "SET")) {
-        (*registers_set)[instruction.cmd_set.rd] = instruction.cmd_set.val;
-      } else if (instruction.cmd.op == opcode_index(0, "AND")) {
-        (*registers_set)[instruction.cmd.rd] =
-          (*registers_set)[instruction.cmd.rs1] & (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.op == opcode_index(0, "OR")) {
-        (*registers_set)[instruction.cmd.rd] =
-          (*registers_set)[instruction.cmd.rs1] | (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.op == opcode_index(0, "XOR")) {
-        (*registers_set)[instruction.cmd.rd] =
-          (*registers_set)[instruction.cmd.rs1] ^ (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.op == opcode_index(0, "AND")) {
-        (*registers_set)[instruction.cmd.rd] =
-          (*registers_set)[instruction.cmd.rs1] + (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.op == opcode_index(0, "SUB")) {
-        (*registers_set)[instruction.cmd.rd] =
-          (*registers_set)[instruction.cmd.rs1] - (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.op == opcode_index(0, "MULT")) {
-        (*registers_set)[instruction.cmd.rd] =
-          (*registers_set)[instruction.cmd.rs1] * (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.op == opcode_index(0, "DIV")) {
-        (*registers_set)[instruction.cmd.rd] =
-          (*registers_set)[instruction.cmd.rs1] / (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.op == opcode_index(0, "LSH")) {
-        (*registers_set)[instruction.cmd.rd] =
-          (*registers_set)[instruction.cmd.rs1] << (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.op == opcode_index(0, "RSH")) {
-        (*registers_set)[instruction.cmd.rd] =
-          (*registers_set)[instruction.cmd.rs1] >> (*registers_set)[instruction.cmd.rs2];
-      } else if (instruction.cmd.op == opcode_index(0, "OTH0")) {
-        exec_cmd1(text, stack, registers_set, instruction);
-      } else {
-        throw fatal_error_t("unknown cmd0");
-      }
-    }
-
     void process(const data_t& text, const functions_t& functions) {
       DEBUG_LOGGER_TRACE_EXEC;
 
@@ -1271,7 +993,6 @@ struct interpreter_t {
     auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(lexemes);
     DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_analyzer_n::show(syntax_lisp_tree).c_str());
 
-    // TODO
     auto stmt_program = syntax_analyzer_n::process(syntax_lisp_tree);
     DEBUG_LOGGER_SA("syntax_tree: \n%s", syntax_analyzer_n::show(stmt_program).c_str());
 
