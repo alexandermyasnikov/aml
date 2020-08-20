@@ -51,8 +51,13 @@ namespace aml_n {
 
     using data_t = std::vector<uint8_t>;
 
-    struct fatal_error : std::runtime_error {
-      fatal_error(const std::string& msg = "unknown error") : std::runtime_error(msg) { }
+    static std::string indent(size_t count) {
+      static size_t tab_size = 2;
+      return std::string(count * tab_size, ' ');
+    }
+
+    struct fatal_error_t : std::runtime_error {
+      fatal_error_t(const std::string& msg = "unknown error") : std::runtime_error(msg) { }
     };
   }
 
@@ -62,21 +67,88 @@ namespace aml_n {
 
     using namespace utils_n;
 
-    struct lexeme_empty_t   { };
-    struct lexeme_lp_t      { };
-    struct lexeme_rp_t      { };
-    struct lexeme_func_t    { };
-    struct lexeme_ret_t     { };
-    struct lexeme_integer_t { int64_t     value;  };
-    struct lexeme_arg_t     { size_t      number; };
-    struct lexeme_ident_t   { std::string value;  };
+    struct lexeme_empty_t {
+      static std::string regex() { return R"(\s+|;.*?\n)"; }
+      std::string show() const { return ""; }
+    };
+
+    struct lexeme_lp_t {
+      static std::string regex() { return R"(\()"; }
+      std::string show() const { return "("; }
+    };
+
+    struct lexeme_rp_t {
+      static std::string regex() { return R"(\))"; }
+      std::string show() const { return ")"; }
+    };
+
+    struct lexeme_func_t {
+      static std::string regex() { return R"(func)"; }
+      std::string show() const { return "func"; }
+    };
+
+    struct lexeme_return_t {
+      static std::string regex() { return R"(return)"; }
+      std::string show() const { return "return"; }
+    };
+
+    struct lexeme_block_t {
+      static std::string regex() { return R"(block)"; }
+      std::string show() const { return "block"; }
+    };
+
+    struct lexeme_set_t {
+      static std::string regex() { return R"(set)"; }
+      std::string show() const { return "set"; }
+    };
+
+    struct lexeme_call_t {
+      static std::string regex() { return R"(call)"; }
+      std::string show() const { return "call"; }
+    };
+
+    struct lexeme_var_t {
+      static std::string regex() { return R"(var)"; }
+      std::string show() const { return "var"; }
+    };
+
+    struct lexeme_int_t {
+      static std::string regex() { return R"(int)"; }
+      std::string show() const { return "int"; }
+    };
+
+    struct lexeme_integer_t {
+      int64_t value;
+
+      static std::string regex() { return R"([-+]?\d+)"; }
+      std::string show() const { return std::to_string(value); }
+    };
+
+    struct lexeme_arg_t {
+      size_t value;
+
+      static std::string regex() { return R"(\$(\d+))"; }
+      std::string show() const { return "$" + std::to_string(value); }
+    };
+
+    struct lexeme_ident_t {
+      std::string value;
+
+      static std::string regex() { return R"(\w+)"; }
+      std::string show() const { return value; }
+    };
 
     using lexeme_t = std::variant<
       lexeme_empty_t,
       lexeme_lp_t,
       lexeme_rp_t,
       lexeme_func_t,
-      lexeme_ret_t,
+      lexeme_return_t,
+      lexeme_block_t,
+      lexeme_set_t,
+      lexeme_call_t,
+      lexeme_var_t,
+      lexeme_int_t,
       lexeme_integer_t,
       lexeme_arg_t,
       lexeme_ident_t>;
@@ -90,32 +162,44 @@ namespace aml_n {
 
     static inline std::vector<rule_t> rules = {
       {
-        std::regex(R"(\s+)"),
+        std::regex(lexeme_empty_t::regex()),
         [](const std::string&) { return lexeme_empty_t{}; }
       }, {
-        std::regex(R"(;.*?\n)"),
-        [](const std::string&) { return lexeme_empty_t{}; }
-      }, {
-        std::regex(R"(\()"),
+        std::regex(lexeme_lp_t::regex()),
         [](const std::string&) { return lexeme_lp_t{}; }
       }, {
-        std::regex(R"(\))"),
+        std::regex(lexeme_rp_t::regex()),
         [](const std::string&) { return lexeme_rp_t{}; }
       }, {
-        std::regex(R"(func)"),
-          [](const std::string& str) { return lexeme_func_t{}; }
+        std::regex(lexeme_func_t::regex()),
+        [](const std::string& str) { return lexeme_func_t{}; }
       }, {
-        std::regex(R"(ret)"),
-          [](const std::string& str) { return lexeme_ret_t{}; }
+        std::regex(lexeme_return_t::regex()),
+        [](const std::string& str) { return lexeme_return_t{}; }
       }, {
-        std::regex(R"([-+]?\d+)"),
-          [](const std::string& str) { return lexeme_integer_t{std::stol(str)}; }
+        std::regex(lexeme_block_t::regex()),
+        [](const std::string& str) { return lexeme_block_t{}; }
       }, {
-        std::regex(R"(\$(\d+))"),
-          [](const std::string& str) { return lexeme_arg_t{std::stoull(str)}; }
+        std::regex(lexeme_set_t::regex()),
+        [](const std::string& str) { return lexeme_set_t{}; }
       }, {
-        std::regex(R"(\w+)"),
-          [](const std::string& str) { return lexeme_ident_t{str}; }
+        std::regex(lexeme_call_t::regex()),
+        [](const std::string& str) { return lexeme_call_t{}; }
+      }, {
+        std::regex(lexeme_var_t::regex()),
+        [](const std::string& str) { return lexeme_var_t{}; }
+      }, {
+        std::regex(lexeme_int_t::regex()),
+        [](const std::string& str) { return lexeme_int_t{}; }
+      }, {
+        std::regex(lexeme_integer_t::regex()),
+        [](const std::string& str) { return lexeme_integer_t{std::stol(str)}; }
+      }, {
+        std::regex(lexeme_arg_t::regex()),
+        [](const std::string& str) { return lexeme_arg_t{std::stoull(str)}; }
+      }, {
+        std::regex(lexeme_ident_t::regex()),
+        [](const std::string& str) { return lexeme_ident_t{str}; }
       }
     };
 
@@ -145,7 +229,7 @@ namespace aml_n {
       }
 
       if (!s.empty())
-        throw fatal_error("invalid lexeme");
+        throw fatal_error_t("unexpected lexeme");
 
       return lexemes;
     }
@@ -153,15 +237,7 @@ namespace aml_n {
     static std::string show_lexeme(const lexeme_t& lexeme) {
       std::string str;
       std::visit(overloaded {
-          [&str] (lexeme_empty_t)                { str = "(empty)"; },
-          [&str] (lexeme_lp_t)                   { str = "("; },
-          [&str] (lexeme_rp_t)                   { str = ")"; },
-          [&str] (lexeme_func_t)                 { str = "func"; },
-          [&str] (lexeme_ret_t)                  { str = "ret"; },
-          [&str] (const lexeme_integer_t &value) { str = std::to_string(value.value); },
-          [&str] (const lexeme_arg_t     &value) { str = "$" + std::to_string(value.number); },
-          [&str] (const lexeme_ident_t   &value) { str = value.value; },
-          [&str] (auto)                          { str = "(unknown)"; },
+          [&str] (const auto &value) { str = value.show(); },
           }, lexeme);
       return str;
     }
@@ -187,7 +263,7 @@ namespace aml_n {
       using nodes_t = std::deque<syntax_lisp_tree_t>;
 
       node_t  node  = lexeme_empty_t{};
-      nodes_t nodes = {};
+      nodes_t nodes = { };
 
       bool is_leaf() const {
         return !std::get_if<lexeme_empty_t>(&node);
@@ -202,7 +278,7 @@ namespace aml_n {
           stack.push(syntax_lisp_tree_t{});
         } else if (std::get_if<lexeme_rp_t>(&lexeme)) {
           if (stack.empty())
-            throw fatal_error("syntax_lisp_analyzer: unexpected ')'");
+            throw fatal_error_t("syntax_lisp_analyzer: unexpected ')'");
           auto top = stack.top();
           stack.pop();
           stack.top().nodes.push_back(top);
@@ -212,7 +288,7 @@ namespace aml_n {
       }
 
       if (stack.size() != 1)
-        throw fatal_error("syntax_lisp_analyzer: parse error");
+        throw fatal_error_t("syntax_lisp_analyzer: parse error");
 
       return stack.top();
     }
@@ -223,11 +299,11 @@ namespace aml_n {
       if (syntax_lisp_tree.is_leaf()) {
         str += show_lexeme(syntax_lisp_tree.node);
       } else {
-        str += "( ";
+        str += lexeme_lp_t().show() + " ";
         for (const auto& node : syntax_lisp_tree.nodes) {
           str += show(node) + " ";
         }
-        str += ")";
+        str += lexeme_rp_t().show();
       }
 
       return str;
@@ -243,39 +319,360 @@ namespace aml_n {
 
     // TODO
     // GRAMMAR
+    // program: func+
+    // func:    FUNC <name> expr
+    // expr:    BLOCK expr+
+    // expr:    SET <name> expr
+    // expr:    CALL <name> arg*
+    // expr:    INT <digit>
+    // expr:    VAR <name>
 
-    struct state_t {
-      using cb_t = std::function<void()>;
-      cb_t cb;
+    struct stmt_program_t;
+    struct stmt_func_t;
+    struct stmt_expr_t;
+    struct stmt_block_t;
+    struct stmt_set_t;
+    struct stmt_call_t;
+    struct stmt_var_t;
+    struct stmt_int_t;
+
+    struct stmt_expr_t {
+      using expr_t = std::variant<
+        std::shared_ptr<stmt_block_t>,
+        std::shared_ptr<stmt_set_t>,
+        std::shared_ptr<stmt_call_t>,
+        std::shared_ptr<stmt_var_t>,
+        std::shared_ptr<stmt_int_t>>;
+
+      expr_t expr;
+
+      std::string show(size_t deep) const;
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
     };
 
-    std::vector<state_t> states;
+    struct stmt_block_t {
+      std::vector<stmt_expr_t> stmt_exprs;
 
-    struct program_stmt_t;
-    struct func_stmt_t;
-
-    struct program_stmt_t {
-      std::deque<std::shared_ptr<func_stmt_t>> funcs;
+      std::string show(size_t deep) const;
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
     };
 
-    struct func_stmt_t {
-      std::shared_ptr<std::string> name;
-      // std::shared_ptr<expr_stmt_t> body;
+    struct stmt_set_t {
+      std::string name = "<name>";
+      stmt_expr_t body = { };
+
+      std::string show(size_t deep) const;
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
     };
 
+    struct stmt_call_t {
+      std::string name = "<name>";
+      std::vector<stmt_expr_t> args;
 
+      std::string show(size_t deep) const;
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
+    };
 
-    // using syntax_tree_lisp_t = syntax_analyzer_lisp_t::syntax_tree_lisp_t;
-    // using lexeme_list_sptr_t = syntax_analyzer_lisp_t::lexeme_list_sptr_t;
-    // using lexeme_ident_t     = lexical_analyzer_n::lexeme_ident_t;
-    // using lexeme_t           = lexical_analyzer_n::lexeme_t;
+    struct stmt_var_t {
+      std::string value = "<name>";
 
-    program_stmt_t process(const syntax_lisp_tree_t& syntax_lisp_tree) {
-      program_stmt_t program_stmt;
+      std::string show(size_t deep) const;
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
+    };
 
-      ;
+    struct stmt_int_t {
+      int64_t value = { };
 
-      return program_stmt;
+      std::string show(size_t deep) const;
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
+    };
+
+    struct stmt_func_t {
+      std::string name = "<name>";
+      stmt_expr_t body = { };
+
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
+      std::string show(size_t deep) const;
+    };
+
+    struct stmt_program_t {
+      std::deque<stmt_func_t> funcs;
+
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
+      std::string show(size_t deep) const;
+    };
+
+    stmt_program_t process(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      stmt_program_t stmt_program;
+      stmt_program.parse(syntax_lisp_tree);
+      return stmt_program;
+    }
+
+    static std::string show(const stmt_program_t& stmt_program) {
+      std::string str;
+      str += stmt_program.show(0);
+      return str;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+
+    std::string stmt_expr_t::show(size_t deep) const {
+      std::string str;
+      std::visit(overloaded {
+          [&str, deep] (const auto &expr) { str = expr->show(deep); },
+          }, expr);
+      return str;
+    }
+
+    void stmt_expr_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      try {
+        stmt_block_t stmt_block;
+        stmt_block.parse(syntax_lisp_tree);
+        expr = std::make_shared<stmt_block_t>(stmt_block);
+        return;
+      } catch (const fatal_error_t&) { }
+
+      try {
+        stmt_set_t stmt_set;
+        stmt_set.parse(syntax_lisp_tree);
+        expr = std::make_shared<stmt_set_t>(stmt_set);
+        return;
+      } catch (const fatal_error_t&) { }
+
+      try {
+        stmt_call_t stmt_call;
+        stmt_call.parse(syntax_lisp_tree);
+        expr = std::make_shared<stmt_call_t>(stmt_call);
+        return;
+      } catch (const fatal_error_t&) { }
+
+      try {
+        stmt_var_t stmt_var;
+        stmt_var.parse(syntax_lisp_tree);
+        expr = std::make_shared<stmt_var_t>(stmt_var);
+        return;
+      } catch (const fatal_error_t&) { }
+
+      stmt_int_t stmt_const;
+      stmt_const.parse(syntax_lisp_tree);
+      expr = std::make_shared<stmt_int_t>(stmt_const);
+    }
+
+    std::string stmt_block_t::show(size_t deep) const {
+      std::string str;
+      str += lexeme_lp_t().show();
+      str += lexeme_block_t().show();
+      for (const auto& stmt_expr : stmt_exprs) {
+        str += "\n";
+        str += indent(deep);
+        str += stmt_expr.show(deep + 1);
+      }
+      str += lexeme_rp_t().show();
+      return str;
+    }
+
+    void stmt_block_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("block: unexpected leaf");
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() < 2)
+        throw fatal_error_t("block: expected 2 nodes");
+
+      if (!nodes[0].is_leaf() || !std::get_if<lexeme_block_t>(&nodes[0].node))
+        throw fatal_error_t("block: expected lexeme_block_t");
+
+      for (size_t i = 1; i < nodes.size(); ++i) {
+        stmt_expr_t stmt_expr;
+        stmt_expr.parse(nodes[i]);
+        stmt_exprs.push_back(stmt_expr);
+      }
+    }
+
+    std::string stmt_set_t::show(size_t deep) const {
+      std::string str;
+      str += lexeme_lp_t().show();
+      str += lexeme_set_t().show();
+      str += " ";
+      str += name;
+      str += "\n";
+      str += indent(deep);
+      str += body.show(deep + 1);
+      str += lexeme_rp_t().show();
+      return str;
+    }
+
+    void stmt_set_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("int: unexpected leaf");
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() != 3)
+        throw fatal_error_t("int: expected 3 nodes");
+
+      if (!nodes[0].is_leaf() || !std::get_if<lexeme_set_t>(&nodes[0].node))
+        throw fatal_error_t("int: expected lexeme_set_t");
+
+      if (!nodes[1].is_leaf() || !std::get_if<lexeme_ident_t>(&nodes[1].node))
+        throw fatal_error_t("func: expected lexeme_ident_t");
+      name = std::get<lexeme_ident_t>(nodes[1].node).value;
+
+      body.parse(nodes[2]);
+    }
+
+    std::string stmt_call_t::show(size_t deep) const {
+      std::string str;
+      str += lexeme_lp_t().show();
+      str += lexeme_call_t().show();
+      str += " ";
+      str += name;
+      for (const auto& arg : args) {
+        str += "\n";
+        str += indent(deep);
+        str += arg.show(deep + 1);
+      }
+      str += lexeme_rp_t().show();
+      return str;
+    }
+
+    void stmt_call_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("call: unexpected leaf");
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() < 2)
+        throw fatal_error_t("call: expected 2 nodes");
+
+      if (!nodes[0].is_leaf() || !std::get_if<lexeme_call_t>(&nodes[0].node))
+        throw fatal_error_t("call: expected lexeme_call_t");
+
+      if (!nodes[1].is_leaf() || !std::get_if<lexeme_ident_t>(&nodes[1].node))
+        throw fatal_error_t("func: expected lexeme_ident_t");
+      name = std::get<lexeme_ident_t>(nodes[1].node).value;
+
+      for (size_t i = 2; i < nodes.size(); ++i) {
+        stmt_expr_t stmt_expr;
+        stmt_expr.parse(nodes[i]);
+        args.push_back(stmt_expr);
+      }
+    }
+
+    std::string stmt_var_t::show(size_t deep) const {
+      std::string str;
+      str += lexeme_lp_t().show();
+      str += lexeme_var_t().show();
+      str += " ";
+      str += value;
+      str += lexeme_rp_t().show();
+      return str;
+    }
+
+    void stmt_var_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("var: unexpected leaf");
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() != 2)
+        throw fatal_error_t("var: expected 2 nodes");
+
+      if (!nodes[0].is_leaf() || !std::get_if<lexeme_var_t>(&nodes[0].node))
+        throw fatal_error_t("var: expected lexeme_var_t");
+
+      if (!nodes[1].is_leaf() || !std::get_if<lexeme_ident_t>(&nodes[1].node))
+        throw fatal_error_t("var: expected lexeme_ident_t");
+      value = std::get<lexeme_ident_t>(nodes[1].node).value;
+    }
+
+    std::string stmt_int_t::show(size_t deep) const {
+      std::string str;
+      str += lexeme_lp_t().show();
+      str += lexeme_int_t().show();
+      str += " ";
+      str += std::to_string(value);
+      str += lexeme_rp_t().show();
+      return str;
+    }
+
+    void stmt_int_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("int: unexpected leaf");
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() != 2)
+        throw fatal_error_t("int: expected 2 nodes");
+
+      if (!nodes[0].is_leaf() || !std::get_if<lexeme_int_t>(&nodes[0].node))
+        throw fatal_error_t("int: expected lexeme_int_t");
+
+      if (!nodes[1].is_leaf() || !std::get_if<lexeme_integer_t>(&nodes[1].node))
+        throw fatal_error_t("int: expected lexeme_integer_t");
+      value = std::get<lexeme_integer_t>(nodes[1].node).value;
+    }
+
+    void stmt_func_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("func: unexpected leaf");
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() != 3)
+        throw fatal_error_t("func: expected 3 nodes");
+
+      if (!nodes[0].is_leaf() || !std::get_if<lexeme_func_t>(&nodes[0].node))
+        throw fatal_error_t("func: expected lexeme_func_t");
+
+      if (!nodes[1].is_leaf() || !std::get_if<lexeme_ident_t>(&nodes[1].node))
+        throw fatal_error_t("func: expected lexeme_ident_t");
+      name = std::get<lexeme_ident_t>(nodes[1].node).value;
+
+      body.parse(nodes[2]);
+    }
+
+    std::string stmt_func_t::show(size_t deep) const {
+      std::string str;
+      str += lexeme_lp_t().show();
+      str += lexeme_func_t().show();
+      str += " ";
+      str += name;
+      str += "\n";
+      str += indent(deep);
+      str += body.show(deep + 1);
+      str += lexeme_rp_t().show();
+      return str;
+    }
+
+    void stmt_program_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("program: unexpected leaf");
+
+      for (const auto& node : syntax_lisp_tree.nodes) {
+        stmt_func_t stmt_func;
+        stmt_func.parse(node);
+        funcs.push_back(stmt_func);
+      }
+    }
+
+    std::string stmt_program_t::show(size_t deep) const {
+      std::string str;
+      for (const auto& func : funcs) {
+        str += func.show(deep + 1);
+        str += "\n";
+        str += "\n";
+      }
+      return str;
     }
   }
 
@@ -387,7 +784,7 @@ namespace aml_n {
       auto it = std::find_if(opcodes_table.begin(), opcodes_table.end(),
           [offset, name](auto& opcode) { return opcode.offset == offset && opcode.name == name; });
       if (it == opcodes_table.end()) {
-        throw fatal_error("unknown opcode");
+        throw fatal_error_t("unknown opcode");
       }
       return it->index;
     }
@@ -396,7 +793,7 @@ namespace aml_n {
       auto it = std::find_if(opcodes_table.begin(), opcodes_table.end(),
           [offset, index](auto& opcode) { return opcode.offset == offset && opcode.index == index; });
       if (it == opcodes_table.end()) {
-        throw fatal_error("unknown opcode");
+        throw fatal_error_t("unknown opcode");
       }
       return it->name;
     }
@@ -405,7 +802,7 @@ namespace aml_n {
       auto it = std::find_if(regs_table.begin(), regs_table.end(),
           [name](auto& reg) { return reg.name == name; });
       if (it == regs_table.end()) {
-        throw fatal_error("unknown reg");
+        throw fatal_error_t("unknown reg");
       }
       return it->index;
     }
@@ -414,7 +811,7 @@ namespace aml_n {
       auto it = std::find_if(regs_table.begin(), regs_table.end(),
           [index](auto& reg) { return reg.index == index; });
       if (it == regs_table.end()) {
-        throw fatal_error("unknown reg");
+        throw fatal_error_t("unknown reg");
       }
       return it->name;
     }
@@ -493,19 +890,19 @@ namespace aml_n {
           auto name = cmd_str.at(1);
 
           if (functions.find(name) != functions.end())
-            throw fatal_error("function exists");
+            throw fatal_error_t("function exists");
 
           functions[name] = instructions.size() * sizeof(instruction_t);
 
         } else if (cmd_str.at(0) == "LABEL") {
-          throw fatal_error("LABEL TODO");
+          throw fatal_error_t("LABEL TODO");
 
         } else if (cmd_str.at(0) == "ADDRESS" && cmd_str.size() == 3) {
           auto rd   = reg_index(cmd_str.at(1));
           auto name = cmd_str.at(2);
 
           if (functions.find(name) == functions.end())
-            throw fatal_error("function not exists");
+            throw fatal_error_t("function not exists");
 
           macro_set(instructions, rd, functions[name]);
 
@@ -538,7 +935,7 @@ namespace aml_n {
           instructions.push_back({ .cmd  = { op1, op2, op3, op4 } });
 
         } else {
-          throw fatal_error("unknown cmd format");
+          throw fatal_error_t("unknown cmd format");
         }
       }
 
@@ -602,12 +999,12 @@ namespace aml_n {
     void exec_cmd3(const data_t& text, data_t& stack, registers_set_t*& registers_set, instruction_t instruction) {
       if (instruction.cmd.rs2 == opcode_index(3, "RET")) {
         if (!(*registers_set)[reg_index("RP")])
-          throw fatal_error("exit TODO");
+          throw fatal_error_t("exit TODO");
         registers_set_t* registers_set_new = reinterpret_cast<registers_set_t*>(stack.data()
             + (*registers_set)[reg_index("RP")] - sizeof(registers_set_t));
         registers_set = registers_set_new;
       } else {
-        throw fatal_error("unknown cmd3");
+        throw fatal_error_t("unknown cmd3");
       }
     }
 
@@ -623,25 +1020,25 @@ namespace aml_n {
       } else if (instruction.cmd.rs1 == opcode_index(2, "OTH2")) {
         exec_cmd3(text, stack, registers_set, instruction);
       } else {
-        throw fatal_error("unknown cmd2");
+        throw fatal_error_t("unknown cmd2");
       }
     }
 
     void exec_cmd1(const data_t& text, data_t& stack, registers_set_t*& registers_set, instruction_t instruction) {
       if (instruction.cmd.rd == opcode_index(1, "BR")) {
-        throw fatal_error("BR TODO");
+        throw fatal_error_t("BR TODO");
       } else if (instruction.cmd.rd == opcode_index(1, "NOT")) {
         (*registers_set)[instruction.cmd.rs1] = ~(*registers_set)[instruction.cmd.rs2];
       } else if (instruction.cmd.rd == opcode_index(1, "LOAD")) {
-        throw fatal_error("LOAD TODO");
+        throw fatal_error_t("LOAD TODO");
       } else if (instruction.cmd.rd == opcode_index(1, "SAVE")) {
-        throw fatal_error("SAVE TODO");
+        throw fatal_error_t("SAVE TODO");
       } else if (instruction.cmd.rd == opcode_index(1, "MOV")) {
         (*registers_set)[instruction.cmd.rs1] = (*registers_set)[instruction.cmd.rs2];
       } else if (instruction.cmd.rd == opcode_index(1, "OTH1")) {
         exec_cmd2(text, stack, registers_set, instruction);
       } else {
-        throw fatal_error("unknown cmd1");
+        throw fatal_error_t("unknown cmd1");
       }
     }
 
@@ -678,7 +1075,7 @@ namespace aml_n {
       } else if (instruction.cmd.op == opcode_index(0, "OTH0")) {
         exec_cmd1(text, stack, registers_set, instruction);
       } else {
-        throw fatal_error("unknown cmd0");
+        throw fatal_error_t("unknown cmd0");
       }
     }
 
@@ -686,7 +1083,7 @@ namespace aml_n {
       DEBUG_LOGGER_TRACE_EXEC;
 
       if (functions.find("__start") == functions.end())
-        throw fatal_error("__start not exists");
+        throw fatal_error_t("__start not exists");
 
       data_t stack(0xFFFF, 0);
 
@@ -724,8 +1121,9 @@ struct interpreter_t {
     auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(lexemes);
     DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_analyzer_n::show(syntax_lisp_tree).c_str());
 
-    auto program_stmt = syntax_analyzer_n::process(syntax_lisp_tree);
-    // DEBUG_LOGGER_SA("syntax_tree: \n%s", syntax_analyzer_n::show(syntax_tree).c_str());
+    // TODO
+    auto stmt_program = syntax_analyzer_n::process(syntax_lisp_tree);
+    DEBUG_LOGGER_SA("syntax_tree: \n%s", syntax_analyzer_n::show(stmt_program).c_str());
 
     // TODO
     // intermediate_code_generator_n::instructions_t instructions;
@@ -743,18 +1141,21 @@ struct interpreter_t {
 
 int main() {
   std::string code = R"ASM(
-    (func sum
+    (func test
       (block
-        (set res (add $1 $1 $2))
-        (ret res)))
+        (int 0)
+        (block (int 10) (block (int 100) ) (int 12))
+        (set ret (call sum (int 100) (int 101) (int 102)))
+        (set ret (int 100))
+        (int 3)))
 
     (func main
       (block
         (set tmp
           (call sum
-            (call sum 1 2)
-            10))
-        (call print tmp)))
+            (call sum (int 1) (int 2))
+            (int 10)))
+        (call print (call ref (var tmp)))))
   )ASM";
 
   // std::cout << code << std::endl;
