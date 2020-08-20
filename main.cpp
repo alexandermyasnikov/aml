@@ -117,6 +117,11 @@ namespace aml_n {
       std::string show() const { return "var"; }
     };
 
+    struct lexeme_arg_t {
+      static std::string regex() { return R"(arg)"; }
+      std::string show() const { return "arg"; }
+    };
+
     struct lexeme_int_t {
       static std::string regex() { return R"(int)"; }
       std::string show() const { return "int"; }
@@ -127,13 +132,6 @@ namespace aml_n {
 
       static std::string regex() { return R"([-+]?\d+)"; }
       std::string show() const { return std::to_string(value); }
-    };
-
-    struct lexeme_arg_t {
-      size_t value;
-
-      static std::string regex() { return R"(\$(\d+))"; }
-      std::string show() const { return "$" + std::to_string(value); }
     };
 
     struct lexeme_ident_t {
@@ -154,9 +152,9 @@ namespace aml_n {
       lexeme_set_t,
       lexeme_call_t,
       lexeme_var_t,
+      lexeme_arg_t,
       lexeme_int_t,
       lexeme_integer_t,
-      lexeme_arg_t,
       lexeme_ident_t>;
 
     using lexemes_t = std::deque<lexeme_t>;
@@ -198,14 +196,14 @@ namespace aml_n {
         std::regex(lexeme_var_t::regex()),
         [](const std::string& str) { return lexeme_var_t{}; }
       }, {
+        std::regex(lexeme_arg_t::regex()),
+        [](const std::string& str) { return lexeme_arg_t{}; }
+      }, {
         std::regex(lexeme_int_t::regex()),
         [](const std::string& str) { return lexeme_int_t{}; }
       }, {
         std::regex(lexeme_integer_t::regex()),
         [](const std::string& str) { return lexeme_integer_t{std::stol(str)}; }
-      }, {
-        std::regex(lexeme_arg_t::regex()),
-        [](const std::string& str) { return lexeme_arg_t{std::stoull(str)}; }
       }, {
         std::regex(lexeme_ident_t::regex()),
         [](const std::string& str) { return lexeme_ident_t{str}; }
@@ -337,6 +335,7 @@ namespace aml_n {
     // expr:    CALL <name> arg*
     // expr:    INT <digit>
     // expr:    VAR <name>
+    // expr:    ARG <digit>
 
     struct stmt_program_t;
     struct stmt_func_t;
@@ -347,6 +346,7 @@ namespace aml_n {
     struct stmt_set_t;
     struct stmt_call_t;
     struct stmt_var_t;
+    struct stmt_arg_t;
     struct stmt_int_t;
 
     struct stmt_expr_t {
@@ -357,6 +357,7 @@ namespace aml_n {
         std::shared_ptr<stmt_set_t>,
         std::shared_ptr<stmt_call_t>,
         std::shared_ptr<stmt_var_t>,
+        std::shared_ptr<stmt_arg_t>,
         std::shared_ptr<stmt_int_t>>;
 
       expr_t expr;
@@ -399,6 +400,13 @@ namespace aml_n {
 
     struct stmt_var_t {
       std::string value = "<name>";
+
+      std::string show(size_t deep) const;
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
+    };
+
+    struct stmt_arg_t {
+      size_t value = { };
 
       std::string show(size_t deep) const;
       void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
@@ -496,6 +504,13 @@ namespace aml_n {
         stmt_var_t stmt_var;
         stmt_var.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_var_t>(stmt_var);
+        return;
+      } catch (const fatal_error_t&) { }
+
+      try {
+        stmt_arg_t stmt_arg;
+        stmt_arg.parse(syntax_lisp_tree);
+        expr = std::make_shared<stmt_arg_t>(stmt_arg);
         return;
       } catch (const fatal_error_t&) { }
 
@@ -670,6 +685,34 @@ namespace aml_n {
       if (!nodes[1].is_leaf() || !std::get_if<lexeme_ident_t>(&nodes[1].node))
         throw fatal_error_t("var: expected lexeme_ident_t");
       value = std::get<lexeme_ident_t>(nodes[1].node).value;
+    }
+
+    std::string stmt_arg_t::show(size_t deep) const {
+      std::string str;
+      str += lexeme_lp_t().show();
+      str += lexeme_arg_t().show();
+      str += " ";
+      str += std::to_string(value);
+      str += lexeme_rp_t().show();
+      return str;
+    }
+
+    void stmt_arg_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("arg: unexpected leaf");
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() != 2)
+        throw fatal_error_t("arg: expected 2 nodes");
+
+      if (!nodes[0].is_leaf() || !std::get_if<lexeme_arg_t>(&nodes[0].node))
+        throw fatal_error_t("arg: expected lexeme_arg_t");
+
+      if (!nodes[1].is_leaf() || !std::get_if<lexeme_integer_t>(&nodes[1].node))
+        throw fatal_error_t("arg: expected lexeme_integer_t");
+      value = std::get<lexeme_integer_t>(nodes[1].node).value;
     }
 
     std::string stmt_int_t::show(size_t deep) const {
@@ -1258,8 +1301,8 @@ int main() {
 
     (func min
       (block
-        (set a (var x1))
-        (set b (var x2))
+        (set a (arg 1))
+        (set b (arg 2))
         (set ret (if (call greater (var a) (var b)) (var a) (var b)))
         (return (var ret))))
 
