@@ -33,58 +33,21 @@ Version: 0.1
 
 
 
-### Набор инструкций: // TODO
-
-Все инструкции 16-разрядные
-
-```
-xxxx xxxx xxxx xxxx
-   0    d    v    v   SET(d,a):     Rd = (0 0 0 0 0 0 0 v)
-   1    d    a    b   AND(d,a,b):   Rd = Ra & Rb
-   2    d    a    b   OR (d,a,b):   Rd = Ra | Rb
-   3    d    a    b   XOR(d,a,b):   Rd = Ra ^ Rb
-   4    d    a    b   ADD(d,a,b):   Rd = Ra + Rb   + c
-   5    d    a    b   SUB(d,a,b):   Rd = Ra - Rb   - c
-   6    d    a    b   MULT(d,a,b):  (Rt, Rd) = Ra * Rb
-   7    d    a    b   DIV(d,a,b):   Rd = Ra / Rb; Rt = Ra % Rb
-   8    d    a    b   LSH(d,a):     Rd = Ra << Rb
-   9    d    a    b   RSH(d,a):     Rd = Ra >> Rb
-  15    0    d    a   BR(d,a):      RIP = Rd if Ra
-  15    1    d    a   NOT(d,a):     Rd = ~Ra
-  15    2    d    a   LOAD(d,a):    Rd = M[Ra]              // TODO width
-  15    3    d    a   SAVE(d,a):    M[Ra] = Rd              // TODO width
-  15    4    d    a   MOV(d,a):     Rd = Ra
-  15   15    0    a   CALL(a):      Сохранение текущих регистров. Создание нового фрейма стека
-  15   15   15    0   RET():        Восстановление сохраненных регистров
-```
-
-
-
-### Макросы: // TODO
-
-```
-FUNCTION(name)      Сохраняет адрес функции
-LABEL(name)         Сохраняет адрес метки
-ADDRESS(Ra, name)   Копирует адрес функции (метки) в регистр Ra
-```
-
-
-
 ### Пример кода: // TODO
 
 ```
 (FUNC sum
   (BLOCK
     (SET ret (INT 1))
-    (SET ret (__add $1 $2))
-    (RET ret)))
+    (SET ret (CALL __add (ARG 1) (ARG 2)))
+    (RETURN ret)))
 
 (FUNC main
   (BLOCK
     (SET tmp
       (CALL sum
         (CALL sum 1 2)
-        10))
+        (INT 10)))
     (CALL print tmp)))
 ```
 
