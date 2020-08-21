@@ -51,6 +51,9 @@ namespace aml_n {
 
     using data_t = std::vector<uint8_t>;
 
+    static inline size_t column_start = 1;
+    static inline size_t line_start = 1;
+
     static std::string indent(size_t count) {
       static size_t tab_size = 2;
       return std::string(count * tab_size, ' ');
@@ -67,74 +70,93 @@ namespace aml_n {
 
     using namespace utils_n;
 
-    struct lexeme_empty_t {
-      static std::string regex() { return R"(\s+|;.*?\n)"; }
+    struct pos_t {
+      size_t line   = line_start;
+      size_t column = column_start;
+      size_t length = 0;
+
+      std::string show() const {
+        return std::to_string(line) + ":" + std::to_string(column) + ":" + std::to_string(length);
+      }
+    };
+
+    struct lexeme_base_t {
+      pos_t pos;
+    };
+
+    struct lexeme_nl_t : lexeme_base_t {
+      static std::string regex() { return R"(\n)"; }
+      std::string show() const { return "\n"; }
+    };
+
+    struct lexeme_empty_t : lexeme_base_t {
+      static std::string regex() { return R"(\s+|;[^\n]*)"; } // multiline comment: /\*[\s\S]*?\*/
       std::string show() const { return ""; }
     };
 
-    struct lexeme_lp_t {
+    struct lexeme_lp_t : lexeme_base_t {
       static std::string regex() { return R"(\()"; }
       std::string show() const { return "("; }
     };
 
-    struct lexeme_rp_t {
+    struct lexeme_rp_t : lexeme_base_t {
       static std::string regex() { return R"(\))"; }
       std::string show() const { return ")"; }
     };
 
-    struct lexeme_func_t {
+    struct lexeme_func_t : lexeme_base_t {
       static std::string regex() { return R"(func)"; }
       std::string show() const { return "func"; }
     };
 
-    struct lexeme_return_t {
+    struct lexeme_return_t : lexeme_base_t {
       static std::string regex() { return R"(return)"; }
       std::string show() const { return "return"; }
     };
 
-    struct lexeme_block_t {
+    struct lexeme_block_t : lexeme_base_t {
       static std::string regex() { return R"(block)"; }
       std::string show() const { return "block"; }
     };
 
-    struct lexeme_if_t {
+    struct lexeme_if_t : lexeme_base_t {
       static std::string regex() { return R"(if)"; }
       std::string show() const { return "if"; }
     };
 
-    struct lexeme_set_t {
+    struct lexeme_set_t : lexeme_base_t {
       static std::string regex() { return R"(set)"; }
       std::string show() const { return "set"; }
     };
 
-    struct lexeme_call_t {
+    struct lexeme_call_t : lexeme_base_t {
       static std::string regex() { return R"(call)"; }
       std::string show() const { return "call"; }
     };
 
-    struct lexeme_var_t {
+    struct lexeme_var_t : lexeme_base_t {
       static std::string regex() { return R"(var)"; }
       std::string show() const { return "var"; }
     };
 
-    struct lexeme_arg_t {
+    struct lexeme_arg_t : lexeme_base_t {
       static std::string regex() { return R"(arg)"; }
       std::string show() const { return "arg"; }
     };
 
-    struct lexeme_int_t {
+    struct lexeme_int_t : lexeme_base_t {
       static std::string regex() { return R"(int)"; }
       std::string show() const { return "int"; }
     };
 
-    struct lexeme_integer_t {
+    struct lexeme_integer_t : lexeme_base_t {
       int64_t value;
 
       static std::string regex() { return R"([-+]?\d+)"; }
       std::string show() const { return std::to_string(value); }
     };
 
-    struct lexeme_ident_t {
+    struct lexeme_ident_t : lexeme_base_t {
       std::string value;
 
       static std::string regex() { return R"(\w+)"; }
@@ -142,6 +164,7 @@ namespace aml_n {
     };
 
     using lexeme_t = std::variant<
+      lexeme_nl_t,
       lexeme_empty_t,
       lexeme_lp_t,
       lexeme_rp_t,
@@ -166,6 +189,9 @@ namespace aml_n {
 
     static inline std::vector<rule_t> rules = {
       {
+        std::regex(lexeme_nl_t::regex()),
+        [](const std::string&) { return lexeme_nl_t{}; }
+      }, {
         std::regex(lexeme_empty_t::regex()),
         [](const std::string&) { return lexeme_empty_t{}; }
       }, {
@@ -203,37 +229,61 @@ namespace aml_n {
         [](const std::string& str) { return lexeme_int_t{}; }
       }, {
         std::regex(lexeme_integer_t::regex()),
-        [](const std::string& str) { return lexeme_integer_t{std::stol(str)}; }
+        [](const std::string& str) { return lexeme_integer_t{.value = std::stol(str)}; }
       }, {
         std::regex(lexeme_ident_t::regex()),
-        [](const std::string& str) { return lexeme_ident_t{str}; }
+        [](const std::string& str) { return lexeme_ident_t{.value = str}; }
       }
     };
 
     lexemes_t process(const std::string& code) {
       lexemes_t lexemes;
-      std::string s{code};
+      auto it = code.begin();
+      auto ite = code.end();
       std::smatch m;
       std::regex_constants::match_flag_type flags =
           std::regex_constants::match_continuous | std::regex_constants::match_not_null;
 
+      pos_t pos = { };
+
       bool run = true;
-      while (run && !s.empty()) {
+      while (run && it != ite) {
         run = false;
         for (const auto& rule : rules) {
-          if (std::regex_search(s, m, rule.regex, flags)) {
-            lexeme_t lexeme = rule.get_lexeme(m.size() > 1 ? m[1].str() : m.str());
-            if (!std::get_if<lexeme_empty_t>(&lexeme)) {
+          if (std::regex_search(it, ite, m, rule.regex, flags)) {
+            lexeme_t lexeme = rule.get_lexeme(m.str());
+
+            if (m.position()) {
+              throw fatal_error_t("lexical_analyzer: unknown position at " + pos.show());
+            }
+
+            pos.length = m.length();
+
+            DEBUG_LOGGER_LA("pos: %zd:%zd:%zd \t %s", pos.line, pos.column, pos.length, m.str().c_str());
+
+            std::visit(overloaded {
+                [&pos] (auto &lexeme) { lexeme.pos = pos; },
+                }, lexeme);
+
+            pos.column += m.length();
+
+            if (std::get_if<lexeme_nl_t>(&lexeme)) {
+              pos.line++;
+              pos.column = column_start;
+            } else if (std::get_if<lexeme_empty_t>(&lexeme)) {
+              ;
+            } else {
               lexemes.push_back(lexeme);
             }
-            s = m.suffix().str();
+
+            it += m.length();
             run = true;
             break;
           }
         }
       }
 
-      if (!s.empty())
+      if (it != ite)
         throw fatal_error_t("unexpected lexeme");
 
       return lexemes;
@@ -282,7 +332,7 @@ namespace aml_n {
         if (std::get_if<lexeme_lp_t>(&lexeme)) {
           stack.push(syntax_lisp_tree_t{});
         } else if (std::get_if<lexeme_rp_t>(&lexeme)) {
-          if (stack.empty())
+          if (stack.size() < 2)
             throw fatal_error_t("syntax_lisp_analyzer: unexpected ')'");
           auto top = stack.top();
           stack.pop();
@@ -1020,7 +1070,7 @@ int main(int argc, char* argv[]) {
     code = argv[1];
   }
 
-  std::cout << code << std::endl;
+  // std::cout << code << std::endl;
 
   interpreter_t interpreter;
   interpreter.exec(code);
