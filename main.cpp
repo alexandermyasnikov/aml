@@ -520,60 +520,64 @@ namespace aml_n {
     void stmt_expr_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
 
-      // TODO switch
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("expr: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      try {
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() < 1)
+        throw fatal_error_t("expr: expected 1 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
+
+      if (!nodes[0].is_leaf())
+        throw fatal_error_t("epxr: expected leaf at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
+
+      if (std::get_if<attr_return_t>(&nodes[0].node.attr)) {
         stmt_return_t stmt_return;
         stmt_return.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_return_t>(stmt_return);
-        return;
-      } catch (const fatal_error_t&) { }
 
-      try {
+      } else if (std::get_if<attr_block_t>(&nodes[0].node.attr)) {
         stmt_block_t stmt_block;
         stmt_block.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_block_t>(stmt_block);
-        return;
-      } catch (const fatal_error_t&) { }
 
-      try {
+      } else if (std::get_if<attr_if_t>(&nodes[0].node.attr)) {
         stmt_if_t stmt_if;
         stmt_if.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_if_t>(stmt_if);
-        return;
-      } catch (const fatal_error_t&) { }
 
-      try {
+      } else if (std::get_if<attr_set_t>(&nodes[0].node.attr)) {
         stmt_set_t stmt_set;
         stmt_set.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_set_t>(stmt_set);
-        return;
-      } catch (const fatal_error_t&) { }
 
-      try {
+      } else if (std::get_if<attr_call_t>(&nodes[0].node.attr)) {
         stmt_call_t stmt_call;
         stmt_call.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_call_t>(stmt_call);
-        return;
-      } catch (const fatal_error_t&) { }
 
-      try {
+      } else if (std::get_if<attr_var_t>(&nodes[0].node.attr)) {
         stmt_var_t stmt_var;
         stmt_var.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_var_t>(stmt_var);
-        return;
-      } catch (const fatal_error_t&) { }
 
-      try {
+      } else if (std::get_if<attr_arg_t>(&nodes[0].node.attr)) {
         stmt_arg_t stmt_arg;
         stmt_arg.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_arg_t>(stmt_arg);
-        return;
-      } catch (const fatal_error_t&) { }
 
-      stmt_int_t stmt_const;
-      stmt_const.parse(syntax_lisp_tree);
-      expr = std::make_shared<stmt_int_t>(stmt_const);
+      } else if (std::get_if<attr_int_t>(&nodes[0].node.attr)) {
+        stmt_int_t stmt_int;
+        stmt_int.parse(syntax_lisp_tree);
+        expr = std::make_shared<stmt_int_t>(stmt_int);
+
+      } else {
+        throw fatal_error_t("epxr: unknown expr at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
+      }
     }
 
     std::string stmt_block_t::show(size_t deep) const {
