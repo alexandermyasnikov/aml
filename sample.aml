@@ -1,10 +1,19 @@
+;  AML
+;  Author: Alexander Myasnikov
+;  mailto:myasnikov.alexander.s@gmail.com
+;  git:https://gitlab.com/amyasnikov/aml
+;  version: 0.1
+
+
+
 (func test
-  (block
-    (int 0)
-    (block (int 10) (block (int 100) ) (int 12))
+  (block ; first comment
+    (int 0) ; second comment
+    (block (int -10) (block (int +100) ) (int -12))
     (set ret (call sum (int 100) (int 101) (int 102)))
     (set ret (int 100))
     (int 3)))
+
 
 (func min
   (block

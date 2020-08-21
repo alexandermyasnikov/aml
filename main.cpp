@@ -80,227 +80,231 @@ namespace aml_n {
       }
     };
 
-    struct lexeme_base_t {
-      pos_t pos;
-    };
+    struct attr_nl_t {
+      static inline const std::string regex = R"(\n)";
 
-    struct lexeme_nl_t : lexeme_base_t {
-      static std::string regex() { return R"(\n)"; }
+      void init(const std::string& lexeme) { }
       std::string show() const { return "\n"; }
     };
 
-    struct lexeme_empty_t : lexeme_base_t {
-      static std::string regex() { return R"(\s+|;[^\n]*)"; } // multiline comment: /\*[\s\S]*?\*/
+    struct attr_empty_t {
+      static inline const std::string regex = R"(\s+|;[^\n]*)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return ""; }
     };
 
-    struct lexeme_lp_t : lexeme_base_t {
-      static std::string regex() { return R"(\()"; }
+    struct attr_lp_t {
+      static inline const std::string regex = R"(\()";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "("; }
     };
 
-    struct lexeme_rp_t : lexeme_base_t {
-      static std::string regex() { return R"(\))"; }
+    struct attr_rp_t {
+      static inline const std::string regex = R"(\))";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return ")"; }
     };
 
-    struct lexeme_func_t : lexeme_base_t {
-      static std::string regex() { return R"(func)"; }
+    struct attr_func_t {
+      static inline const std::string regex = R"(func)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "func"; }
     };
 
-    struct lexeme_return_t : lexeme_base_t {
-      static std::string regex() { return R"(return)"; }
+    struct attr_return_t {
+      static inline const std::string regex = R"(return)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "return"; }
     };
 
-    struct lexeme_block_t : lexeme_base_t {
-      static std::string regex() { return R"(block)"; }
+    struct attr_block_t {
+      static inline const std::string regex = R"(block)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "block"; }
     };
 
-    struct lexeme_if_t : lexeme_base_t {
-      static std::string regex() { return R"(if)"; }
+    struct attr_if_t {
+      static inline const std::string regex = R"(if)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "if"; }
     };
 
-    struct lexeme_set_t : lexeme_base_t {
-      static std::string regex() { return R"(set)"; }
+    struct attr_set_t {
+      static inline const std::string regex = R"(set)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "set"; }
     };
 
-    struct lexeme_call_t : lexeme_base_t {
-      static std::string regex() { return R"(call)"; }
+    struct attr_call_t {
+      static inline const std::string regex = R"(call)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "call"; }
     };
 
-    struct lexeme_var_t : lexeme_base_t {
-      static std::string regex() { return R"(var)"; }
+    struct attr_var_t {
+      static inline const std::string regex = R"(var)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "var"; }
     };
 
-    struct lexeme_arg_t : lexeme_base_t {
-      static std::string regex() { return R"(arg)"; }
+    struct attr_arg_t {
+      static inline const std::string regex = R"(arg)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "arg"; }
     };
 
-    struct lexeme_int_t : lexeme_base_t {
-      static std::string regex() { return R"(int)"; }
+    struct attr_int_t {
+      static inline const std::string regex = R"(int)";
+
+      void init(const std::string& lexeme) { }
       std::string show() const { return "int"; }
     };
 
-    struct lexeme_integer_t : lexeme_base_t {
+    struct attr_integer_t {
+      static inline const std::string regex = R"([-+]?\d+)";
+
       int64_t value;
 
-      static std::string regex() { return R"([-+]?\d+)"; }
+      void init(const std::string& lexeme) { value = stol(lexeme); }
       std::string show() const { return std::to_string(value); }
     };
 
-    struct lexeme_ident_t : lexeme_base_t {
+    struct attr_ident_t {
+      static inline const std::string regex = R"(\w+)";
+
       std::string value;
 
-      static std::string regex() { return R"(\w+)"; }
+      void init(const std::string& lexeme) { value = lexeme; }
       std::string show() const { return value; }
     };
 
-    using lexeme_t = std::variant<
-      lexeme_nl_t,
-      lexeme_empty_t,
-      lexeme_lp_t,
-      lexeme_rp_t,
-      lexeme_func_t,
-      lexeme_return_t,
-      lexeme_block_t,
-      lexeme_if_t,
-      lexeme_set_t,
-      lexeme_call_t,
-      lexeme_var_t,
-      lexeme_arg_t,
-      lexeme_int_t,
-      lexeme_integer_t,
-      lexeme_ident_t>;
+    using attr_t = std::variant<
+      attr_nl_t,
+      attr_empty_t,
+      attr_lp_t,
+      attr_rp_t,
+      attr_func_t,
+      attr_return_t,
+      attr_block_t,
+      attr_if_t,
+      attr_set_t,
+      attr_call_t,
+      attr_var_t,
+      attr_arg_t,
+      attr_int_t,
+      attr_integer_t,
+      attr_ident_t>;
 
-    using lexemes_t = std::deque<lexeme_t>;
-
-    struct rule_t {
-      std::regex regex;
-      std::function<lexeme_t(const std::string&)> get_lexeme;
+    struct token_t {
+      attr_t      attr;
+      pos_t       pos;
+      std::string lexeme;
     };
 
-    static inline std::vector<rule_t> rules = {
-      {
-        std::regex(lexeme_nl_t::regex()),
-        [](const std::string&) { return lexeme_nl_t{}; }
-      }, {
-        std::regex(lexeme_empty_t::regex()),
-        [](const std::string&) { return lexeme_empty_t{}; }
-      }, {
-        std::regex(lexeme_lp_t::regex()),
-        [](const std::string&) { return lexeme_lp_t{}; }
-      }, {
-        std::regex(lexeme_rp_t::regex()),
-        [](const std::string&) { return lexeme_rp_t{}; }
-      }, {
-        std::regex(lexeme_func_t::regex()),
-        [](const std::string& str) { return lexeme_func_t{}; }
-      }, {
-        std::regex(lexeme_return_t::regex()),
-        [](const std::string& str) { return lexeme_return_t{}; }
-      }, {
-        std::regex(lexeme_block_t::regex()),
-        [](const std::string& str) { return lexeme_block_t{}; }
-      }, {
-        std::regex(lexeme_if_t::regex()),
-        [](const std::string& str) { return lexeme_if_t{}; }
-      }, {
-        std::regex(lexeme_set_t::regex()),
-        [](const std::string& str) { return lexeme_set_t{}; }
-      }, {
-        std::regex(lexeme_call_t::regex()),
-        [](const std::string& str) { return lexeme_call_t{}; }
-      }, {
-        std::regex(lexeme_var_t::regex()),
-        [](const std::string& str) { return lexeme_var_t{}; }
-      }, {
-        std::regex(lexeme_arg_t::regex()),
-        [](const std::string& str) { return lexeme_arg_t{}; }
-      }, {
-        std::regex(lexeme_int_t::regex()),
-        [](const std::string& str) { return lexeme_int_t{}; }
-      }, {
-        std::regex(lexeme_integer_t::regex()),
-        [](const std::string& str) { return lexeme_integer_t{.value = std::stol(str)}; }
-      }, {
-        std::regex(lexeme_ident_t::regex()),
-        [](const std::string& str) { return lexeme_ident_t{.value = str}; }
-      }
+    using tokens_t = std::deque<token_t>;
+
+    static inline std::vector<attr_t> attr_rules = {
+      attr_nl_t{},
+      attr_empty_t{},
+      attr_lp_t{},
+      attr_rp_t{},
+      attr_func_t{},
+      attr_return_t{},
+      attr_block_t{},
+      attr_if_t{},
+      attr_set_t{},
+      attr_call_t{},
+      attr_var_t{},
+      attr_arg_t{},
+      attr_int_t{},
+      attr_integer_t{},
+      attr_ident_t{},
     };
 
-    lexemes_t process(const std::string& code) {
-      lexemes_t lexemes;
+    const std::string& get_regex(const attr_t& attr) {
+      const std::string* regex;
+      std::visit(overloaded{[&regex] (const auto &attr) { regex = &attr.regex; } }, attr);
+      return *regex;
+    }
+
+    attr_t get_attr(const attr_t& attr, const std::string& lexeme) {
+      attr_t attr_new;
+      std::visit(overloaded{[&attr_new, lexeme] (const auto& attr) {
+          auto attr_tmp = attr; attr_tmp.init(lexeme); attr_new = attr_tmp; } }, attr);
+      return attr_new;
+    }
+
+    tokens_t process(const std::string& code) {
+      tokens_t tokens;
       auto it = code.begin();
       auto ite = code.end();
       std::smatch m;
       std::regex_constants::match_flag_type flags =
           std::regex_constants::match_continuous | std::regex_constants::match_not_null;
 
-      pos_t pos = { };
+      token_t token;
 
       bool run = true;
       while (run && it != ite) {
         run = false;
-        for (const auto& rule : rules) {
-          if (std::regex_search(it, ite, m, rule.regex, flags)) {
-            lexeme_t lexeme = rule.get_lexeme(m.str());
+        for (const auto& attr_rule : attr_rules) {
+          std::string regex = get_regex(attr_rule);
 
-            if (m.position()) {
-              throw fatal_error_t("lexical_analyzer: unknown position at " + pos.show());
-            }
+          if (!std::regex_search(it, ite, m, std::regex(regex), flags))
+            continue;
 
-            pos.length = m.length();
+          if (m.position())
+            throw fatal_error_t("lexical_analyzer: unknown position at " + token.pos.show());
 
-            DEBUG_LOGGER_LA("pos: %zd:%zd:%zd \t %s", pos.line, pos.column, pos.length, m.str().c_str());
+          token.lexeme = m.str();
+          token.attr = get_attr(attr_rule, token.lexeme);
+          token.pos.length = m.length();
+          token.pos.column += m.length();
 
-            std::visit(overloaded {
-                [&pos] (auto &lexeme) { lexeme.pos = pos; },
-                }, lexeme);
+          DEBUG_LOGGER_LA("pos: %zd:%zd:%zd \t %s", token.pos.line, token.pos.column, token.pos.length, m.str().c_str());
 
-            pos.column += m.length();
-
-            if (std::get_if<lexeme_nl_t>(&lexeme)) {
-              pos.line++;
-              pos.column = column_start;
-            } else if (std::get_if<lexeme_empty_t>(&lexeme)) {
-              ;
-            } else {
-              lexemes.push_back(lexeme);
-            }
-
-            it += m.length();
-            run = true;
-            break;
+          if (std::get_if<attr_nl_t>(&token.attr)) {
+            token.pos.line++;
+            token.pos.column = column_start;
+          } else if (std::get_if<attr_empty_t>(&token.attr)) {
+            ;
+          } else {
+            tokens.push_back(token);
           }
+
+          it += m.length();
+          run = true;
+          break;
         }
       }
 
       if (it != ite)
-        throw fatal_error_t("unexpected lexeme");
+        throw fatal_error_t("lexical_analyzer: unexpected attr at " + token.pos.show());
 
-      return lexemes;
+      return tokens;
     }
 
-    static std::string show_lexeme(const lexeme_t& lexeme) {
+    static std::string show_attr(const attr_t& attr) {
       std::string str;
-      std::visit(overloaded {
-          [&str] (const auto &value) { str = value.show(); },
-          }, lexeme);
+      std::visit(overloaded{[&str] (const auto &attr) { str = attr.show(); }}, attr);
       return str;
     }
 
-    static std::string show(const lexemes_t& lexemes) {
+    static std::string show(const tokens_t& tokens) {
       std::string str;
-      for (const auto& lexeme : lexemes) {
-        str += show_lexeme(lexeme) + " ";
+      for (const auto& token : tokens) {
+        str += show_attr(token.attr) + " ";
       }
       return str;
     }
@@ -314,36 +318,39 @@ namespace aml_n {
     using namespace lexical_analyzer_n;
 
     struct syntax_lisp_tree_t {
-      using node_t = lexeme_t;
+      using node_t = token_t;
       using nodes_t = std::deque<syntax_lisp_tree_t>;
 
-      node_t  node  = lexeme_empty_t{};
+      node_t  node  = token_t{.attr = attr_empty_t{}};
       nodes_t nodes = { };
 
       bool is_leaf() const {
-        return !std::get_if<lexeme_empty_t>(&node);
+        return !std::get_if<attr_empty_t>(&node.attr);
       }
     };
 
-    syntax_lisp_tree_t process(const lexemes_t& lexemes) {
+    syntax_lisp_tree_t process(const tokens_t& tokens) {
       std::stack<syntax_lisp_tree_t> stack;
       stack.push(syntax_lisp_tree_t{});
-      for (const auto& lexeme : lexemes) {
-        if (std::get_if<lexeme_lp_t>(&lexeme)) {
+      token_t token_last;
+      for (const auto& token : tokens) {
+        token_last = token;
+        if (std::get_if<attr_lp_t>(&token.attr)) {
           stack.push(syntax_lisp_tree_t{});
-        } else if (std::get_if<lexeme_rp_t>(&lexeme)) {
+          stack.top().node.pos = token.pos;
+        } else if (std::get_if<attr_rp_t>(&token.attr)) {
           if (stack.size() < 2)
-            throw fatal_error_t("syntax_lisp_analyzer: unexpected ')'");
+            throw fatal_error_t("syntax_lisp_analyzer: unexpected ')' at " + token.pos.show() + " " + token.lexeme);
           auto top = stack.top();
           stack.pop();
           stack.top().nodes.push_back(top);
         } else {
-          stack.top().nodes.push_back(syntax_lisp_tree_t{.node = lexeme});
+          stack.top().nodes.push_back(syntax_lisp_tree_t{.node = token});
         }
       }
 
       if (stack.size() != 1)
-        throw fatal_error_t("syntax_lisp_analyzer: parse error");
+        throw fatal_error_t("syntax_lisp_analyzer: parse error at " + token_last.pos.show() + " " + token_last.lexeme);
 
       return stack.top();
     }
@@ -352,13 +359,13 @@ namespace aml_n {
       std::string str;
 
       if (syntax_lisp_tree.is_leaf()) {
-        str += show_lexeme(syntax_lisp_tree.node);
+        str += show_attr(syntax_lisp_tree.node.attr);
       } else {
-        str += lexeme_lp_t().show() + " ";
+        str += attr_lp_t().show() + " ";
         for (const auto& node : syntax_lisp_tree.nodes) {
           str += show(node) + " ";
         }
-        str += lexeme_rp_t().show();
+        str += attr_rp_t().show();
       }
 
       return str;
@@ -512,6 +519,9 @@ namespace aml_n {
 
     void stmt_expr_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
+
+      // TODO switch
+
       try {
         stmt_return_t stmt_return;
         stmt_return.parse(syntax_lisp_tree);
@@ -568,29 +578,32 @@ namespace aml_n {
 
     std::string stmt_block_t::show(size_t deep) const {
       std::string str;
-      str += lexeme_lp_t().show();
-      str += lexeme_block_t().show();
+      str += attr_lp_t().show();
+      str += attr_block_t().show();
       for (const auto& stmt_expr : stmt_exprs) {
         str += "\n";
         str += indent(deep);
         str += stmt_expr.show(deep + 1);
       }
-      str += lexeme_rp_t().show();
+      str += attr_rp_t().show();
       return str;
     }
 
     void stmt_block_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("block: unexpected leaf");
+        throw fatal_error_t("block: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       const auto& nodes = syntax_lisp_tree.nodes;
 
       if (nodes.size() < 2)
-        throw fatal_error_t("block: expected 2 nodes");
+        throw fatal_error_t("block: expected 2 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      if (!nodes[0].is_leaf() || !std::get_if<lexeme_block_t>(&nodes[0].node))
-        throw fatal_error_t("block: expected lexeme_block_t");
+      if (!nodes[0].is_leaf() || !std::get_if<attr_block_t>(&nodes[0].node.attr))
+        throw fatal_error_t("block: expected attr_block_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
 
       for (size_t i = 1; i < nodes.size(); ++i) {
         stmt_expr_t stmt_expr;
@@ -601,8 +614,8 @@ namespace aml_n {
 
     std::string stmt_if_t::show(size_t deep) const {
       std::string str;
-      str += lexeme_lp_t().show();
-      str += lexeme_if_t().show();
+      str += attr_lp_t().show();
+      str += attr_if_t().show();
       str += "\n";
       str += indent(deep);
       str += stmt_expr_if.show(deep + 1);
@@ -612,22 +625,25 @@ namespace aml_n {
       str += "\n";
       str += indent(deep);
       str += stmt_expr_else.show(deep + 1);
-      str += lexeme_rp_t().show();
+      str += attr_rp_t().show();
       return str;
     }
 
     void stmt_if_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("if: unexpected leaf");
+        throw fatal_error_t("if: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       const auto& nodes = syntax_lisp_tree.nodes;
 
       if (nodes.size() != 4)
-        throw fatal_error_t("if: expected 4 nodes");
+        throw fatal_error_t("if: expected 4 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      if (!nodes[0].is_leaf() || !std::get_if<lexeme_if_t>(&nodes[0].node))
-        throw fatal_error_t("if: expected lexeme_if_t");
+      if (!nodes[0].is_leaf() || !std::get_if<attr_if_t>(&nodes[0].node.attr))
+        throw fatal_error_t("if: expected attr_if_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
 
       stmt_expr_if.parse(nodes[1]);
       stmt_expr_then.parse(nodes[2]);
@@ -636,41 +652,45 @@ namespace aml_n {
 
     std::string stmt_set_t::show(size_t deep) const {
       std::string str;
-      str += lexeme_lp_t().show();
-      str += lexeme_set_t().show();
+      str += attr_lp_t().show();
+      str += attr_set_t().show();
       str += " ";
       str += name;
       str += "\n";
       str += indent(deep);
       str += body.show(deep + 1);
-      str += lexeme_rp_t().show();
+      str += attr_rp_t().show();
       return str;
     }
 
     void stmt_set_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("int: unexpected leaf");
+        throw fatal_error_t("set: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       const auto& nodes = syntax_lisp_tree.nodes;
 
       if (nodes.size() != 3)
-        throw fatal_error_t("int: expected 3 nodes");
+        throw fatal_error_t("set: expected 3 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      if (!nodes[0].is_leaf() || !std::get_if<lexeme_set_t>(&nodes[0].node))
-        throw fatal_error_t("int: expected lexeme_set_t");
+      if (!nodes[0].is_leaf() || !std::get_if<attr_set_t>(&nodes[0].node.attr))
+        throw fatal_error_t("set: expected attr_set_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
 
-      if (!nodes[1].is_leaf() || !std::get_if<lexeme_ident_t>(&nodes[1].node))
-        throw fatal_error_t("func: expected lexeme_ident_t");
-      name = std::get<lexeme_ident_t>(nodes[1].node).value;
+      if (!nodes[1].is_leaf() || !std::get_if<attr_ident_t>(&nodes[1].node.attr))
+        throw fatal_error_t("set: expected attr_ident_t at "
+            + syntax_lisp_tree.nodes[1].node.pos.show() + " " + syntax_lisp_tree.nodes[1].node.lexeme);
+      name = std::get<attr_ident_t>(nodes[1].node.attr).value;
 
       body.parse(nodes[2]);
     }
 
     std::string stmt_call_t::show(size_t deep) const {
       std::string str;
-      str += lexeme_lp_t().show();
-      str += lexeme_call_t().show();
+      str += attr_lp_t().show();
+      str += attr_call_t().show();
       str += " ";
       str += name;
       for (const auto& arg : args) {
@@ -678,26 +698,30 @@ namespace aml_n {
         str += indent(deep);
         str += arg.show(deep + 1);
       }
-      str += lexeme_rp_t().show();
+      str += attr_rp_t().show();
       return str;
     }
 
     void stmt_call_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("call: unexpected leaf");
+        throw fatal_error_t("call: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       const auto& nodes = syntax_lisp_tree.nodes;
 
       if (nodes.size() < 2)
-        throw fatal_error_t("call: expected 2 nodes");
+        throw fatal_error_t("call: expected 2 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      if (!nodes[0].is_leaf() || !std::get_if<lexeme_call_t>(&nodes[0].node))
-        throw fatal_error_t("call: expected lexeme_call_t");
+      if (!nodes[0].is_leaf() || !std::get_if<attr_call_t>(&nodes[0].node.attr))
+        throw fatal_error_t("call: expected attr_call_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
 
-      if (!nodes[1].is_leaf() || !std::get_if<lexeme_ident_t>(&nodes[1].node))
-        throw fatal_error_t("func: expected lexeme_ident_t");
-      name = std::get<lexeme_ident_t>(nodes[1].node).value;
+      if (!nodes[1].is_leaf() || !std::get_if<attr_ident_t>(&nodes[1].node.attr))
+        throw fatal_error_t("call: expected attr_ident_t at "
+            + syntax_lisp_tree.nodes[1].node.pos.show() + " " + syntax_lisp_tree.nodes[1].node.lexeme);
+      name = std::get<attr_ident_t>(nodes[1].node.attr).value;
 
       for (size_t i = 2; i < nodes.size(); ++i) {
         stmt_expr_t stmt_expr;
@@ -708,152 +732,172 @@ namespace aml_n {
 
     std::string stmt_var_t::show(size_t deep) const {
       std::string str;
-      str += lexeme_lp_t().show();
-      str += lexeme_var_t().show();
+      str += attr_lp_t().show();
+      str += attr_var_t().show();
       str += " ";
       str += value;
-      str += lexeme_rp_t().show();
+      str += attr_rp_t().show();
       return str;
     }
 
     void stmt_var_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("var: unexpected leaf");
+        throw fatal_error_t("var: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       const auto& nodes = syntax_lisp_tree.nodes;
 
       if (nodes.size() != 2)
-        throw fatal_error_t("var: expected 2 nodes");
+        throw fatal_error_t("var: expected 2 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      if (!nodes[0].is_leaf() || !std::get_if<lexeme_var_t>(&nodes[0].node))
-        throw fatal_error_t("var: expected lexeme_var_t");
+      if (!nodes[0].is_leaf() || !std::get_if<attr_var_t>(&nodes[0].node.attr))
+        throw fatal_error_t("var: expected attr_var_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
 
-      if (!nodes[1].is_leaf() || !std::get_if<lexeme_ident_t>(&nodes[1].node))
-        throw fatal_error_t("var: expected lexeme_ident_t");
-      value = std::get<lexeme_ident_t>(nodes[1].node).value;
+      if (!nodes[1].is_leaf() || !std::get_if<attr_ident_t>(&nodes[1].node.attr))
+        throw fatal_error_t("var: expected attr_ident_t at "
+            + syntax_lisp_tree.nodes[1].node.pos.show() + " " + syntax_lisp_tree.nodes[1].node.lexeme);
+      value = std::get<attr_ident_t>(nodes[1].node.attr).value;
     }
 
     std::string stmt_arg_t::show(size_t deep) const {
       std::string str;
-      str += lexeme_lp_t().show();
-      str += lexeme_arg_t().show();
+      str += attr_lp_t().show();
+      str += attr_arg_t().show();
       str += " ";
       str += std::to_string(value);
-      str += lexeme_rp_t().show();
+      str += attr_rp_t().show();
       return str;
     }
 
     void stmt_arg_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("arg: unexpected leaf");
+        throw fatal_error_t("arg: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       const auto& nodes = syntax_lisp_tree.nodes;
 
       if (nodes.size() != 2)
-        throw fatal_error_t("arg: expected 2 nodes");
+        throw fatal_error_t("arg: expected 2 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      if (!nodes[0].is_leaf() || !std::get_if<lexeme_arg_t>(&nodes[0].node))
-        throw fatal_error_t("arg: expected lexeme_arg_t");
+      if (!nodes[0].is_leaf() || !std::get_if<attr_arg_t>(&nodes[0].node.attr))
+        throw fatal_error_t("arg: expected attr_arg_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
 
-      if (!nodes[1].is_leaf() || !std::get_if<lexeme_integer_t>(&nodes[1].node))
-        throw fatal_error_t("arg: expected lexeme_integer_t");
-      value = std::get<lexeme_integer_t>(nodes[1].node).value;
+      if (!nodes[1].is_leaf() || !std::get_if<attr_integer_t>(&nodes[1].node.attr))
+        throw fatal_error_t("arg: expected attr_integer_t at "
+            + syntax_lisp_tree.nodes[1].node.pos.show() + " " + syntax_lisp_tree.nodes[1].node.lexeme);
+      value = std::get<attr_integer_t>(nodes[1].node.attr).value;
     }
 
     std::string stmt_int_t::show(size_t deep) const {
       std::string str;
-      str += lexeme_lp_t().show();
-      str += lexeme_int_t().show();
+      str += attr_lp_t().show();
+      str += attr_int_t().show();
       str += " ";
       str += std::to_string(value);
-      str += lexeme_rp_t().show();
+      str += attr_rp_t().show();
       return str;
     }
 
     void stmt_int_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("int: unexpected leaf");
+        throw fatal_error_t("int: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       const auto& nodes = syntax_lisp_tree.nodes;
 
       if (nodes.size() != 2)
-        throw fatal_error_t("int: expected 2 nodes");
+        throw fatal_error_t("int: expected 2 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      if (!nodes[0].is_leaf() || !std::get_if<lexeme_int_t>(&nodes[0].node))
-        throw fatal_error_t("int: expected lexeme_int_t");
+      if (!nodes[0].is_leaf() || !std::get_if<attr_int_t>(&nodes[0].node.attr))
+        throw fatal_error_t("int: expected attr_int_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
 
-      if (!nodes[1].is_leaf() || !std::get_if<lexeme_integer_t>(&nodes[1].node))
-        throw fatal_error_t("int: expected lexeme_integer_t");
-      value = std::get<lexeme_integer_t>(nodes[1].node).value;
+      if (!nodes[1].is_leaf() || !std::get_if<attr_integer_t>(&nodes[1].node.attr))
+        throw fatal_error_t("int: expected attr_integer_t at "
+            + syntax_lisp_tree.nodes[1].node.pos.show() + " " + syntax_lisp_tree.nodes[1].node.lexeme);
+      value = std::get<attr_integer_t>(nodes[1].node.attr).value;
     }
 
     void stmt_func_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("func: unexpected leaf");
+        throw fatal_error_t("func: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       const auto& nodes = syntax_lisp_tree.nodes;
 
       if (nodes.size() != 3)
-        throw fatal_error_t("func: expected 3 nodes");
+        throw fatal_error_t("func: expected 3 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      if (!nodes[0].is_leaf() || !std::get_if<lexeme_func_t>(&nodes[0].node))
-        throw fatal_error_t("func: expected lexeme_func_t");
+      if (!nodes[0].is_leaf() || !std::get_if<attr_func_t>(&nodes[0].node.attr))
+        throw fatal_error_t("func: expected attr_func_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
 
-      if (!nodes[1].is_leaf() || !std::get_if<lexeme_ident_t>(&nodes[1].node))
-        throw fatal_error_t("func: expected lexeme_ident_t");
-      name = std::get<lexeme_ident_t>(nodes[1].node).value;
+      if (!nodes[1].is_leaf() || !std::get_if<attr_ident_t>(&nodes[1].node.attr))
+        throw fatal_error_t("func: expected attr_ident_t at "
+            + syntax_lisp_tree.nodes[1].node.pos.show() + " " + syntax_lisp_tree.nodes[1].node.lexeme);
+      name = std::get<attr_ident_t>(nodes[1].node.attr).value;
 
       body.parse(nodes[2]);
     }
 
     std::string stmt_return_t::show(size_t deep) const {
       std::string str;
-      str += lexeme_lp_t().show();
-      str += lexeme_return_t().show();
+      str += attr_lp_t().show();
+      str += attr_return_t().show();
       str += "\n";
       str += indent(deep);
       str += body.show(deep + 1);
-      str += lexeme_rp_t().show();
+      str += attr_rp_t().show();
       return str;
     }
 
     void stmt_return_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("return: unexpected leaf");
+        throw fatal_error_t("return: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       const auto& nodes = syntax_lisp_tree.nodes;
 
       if (nodes.size() != 2)
-        throw fatal_error_t("return: expected 2 nodes");
+        throw fatal_error_t("return: expected 2 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
-      if (!nodes[0].is_leaf() || !std::get_if<lexeme_return_t>(&nodes[0].node))
-        throw fatal_error_t("return: expected lexeme_return_t");
+      if (!nodes[0].is_leaf() || !std::get_if<attr_return_t>(&nodes[0].node.attr))
+        throw fatal_error_t("return: expected attr_return_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
 
       body.parse(nodes[1]);
     }
 
     std::string stmt_func_t::show(size_t deep) const {
       std::string str;
-      str += lexeme_lp_t().show();
-      str += lexeme_func_t().show();
+      str += attr_lp_t().show();
+      str += attr_func_t().show();
       str += " ";
       str += name;
       str += "\n";
       str += indent(deep);
       str += body.show(deep + 1);
-      str += lexeme_rp_t().show();
+      str += attr_rp_t().show();
       return str;
     }
 
     void stmt_program_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
       DEBUG_LOGGER_TRACE_SA;
       if (syntax_lisp_tree.is_leaf())
-        throw fatal_error_t("program: unexpected leaf");
+        throw fatal_error_t("program: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
 
       for (const auto& node : syntax_lisp_tree.nodes) {
         stmt_func_t stmt_func;
@@ -1035,10 +1079,10 @@ struct interpreter_t {
   void exec(const std::string code) {
     using namespace aml_n;
 
-    auto lexemes = lexical_analyzer_n::process(code);
-    DEBUG_LOGGER_LA("lexemes: \n%s", lexical_analyzer_n::show(lexemes).c_str());
+    auto tokens = lexical_analyzer_n::process(code);
+    DEBUG_LOGGER_LA("tokens: \n%s", lexical_analyzer_n::show(tokens).c_str());
 
-    auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(lexemes);
+    auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(tokens);
     DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_analyzer_n::show(syntax_lisp_tree).c_str());
 
     auto stmt_program = syntax_analyzer_n::process(syntax_lisp_tree);
