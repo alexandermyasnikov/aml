@@ -6,8 +6,8 @@
 
 #include "debug_logger.h"
 
-#define DEBUG_LOGGER_TRACE_LA            DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_LA(...)             DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_TRACE_LA            // DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_LA(...)             // DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_SA            // DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_SA(...)             DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
@@ -150,6 +150,13 @@ namespace aml_n {
       std::string show() const { return "call"; }
     };
 
+    struct attr_syscall_t {
+      static inline const std::string regex = R"(syscall)";
+
+      void init(const std::string& lexeme) { }
+      std::string show() const { return "syscall"; }
+    };
+
     struct attr_var_t {
       static inline const std::string regex = R"(var)";
 
@@ -200,6 +207,7 @@ namespace aml_n {
       attr_if_t,
       attr_set_t,
       attr_call_t,
+      attr_syscall_t,
       attr_var_t,
       attr_arg_t,
       attr_int_t,
@@ -225,6 +233,7 @@ namespace aml_n {
       attr_if_t{},
       attr_set_t{},
       attr_call_t{},
+      attr_syscall_t{},
       attr_var_t{},
       attr_arg_t{},
       attr_int_t{},
@@ -382,11 +391,12 @@ namespace aml_n {
     // GRAMMAR
     // program: func+
     // func:    FUNC <name> expr
-    // expr:    RETURN expr
+    // expr:    RETURN expr         // deprecated
     // expr:    BLOCK expr+
     // expr:    IF expr expr expr
     // expr:    SET <name> expr
     // expr:    CALL <name> arg*
+    // expr:    SYSCALL expr
     // expr:    INT <digit>
     // expr:    VAR <name>
     // expr:    ARG <digit>
@@ -399,6 +409,7 @@ namespace aml_n {
     struct stmt_if_t;
     struct stmt_set_t;
     struct stmt_call_t;
+    struct stmt_syscall_t;
     struct stmt_var_t;
     struct stmt_arg_t;
     struct stmt_int_t;
@@ -410,6 +421,7 @@ namespace aml_n {
         std::shared_ptr<stmt_if_t>,
         std::shared_ptr<stmt_set_t>,
         std::shared_ptr<stmt_call_t>,
+        std::shared_ptr<stmt_syscall_t>,
         std::shared_ptr<stmt_var_t>,
         std::shared_ptr<stmt_arg_t>,
         std::shared_ptr<stmt_int_t>>;
@@ -446,6 +458,14 @@ namespace aml_n {
 
     struct stmt_call_t {
       std::string name = "<name>";
+      std::vector<stmt_expr_t> args;
+
+      std::string show(size_t deep) const;
+      void parse(const syntax_lisp_tree_t& syntax_lisp_tree);
+    };
+
+    struct stmt_syscall_t {
+      // stmt_expr_t name;
       std::vector<stmt_expr_t> args;
 
       std::string show(size_t deep) const;
@@ -558,6 +578,11 @@ namespace aml_n {
         stmt_call_t stmt_call;
         stmt_call.parse(syntax_lisp_tree);
         expr = std::make_shared<stmt_call_t>(stmt_call);
+
+      } else if (std::get_if<attr_syscall_t>(&nodes[0].node.attr)) {
+        stmt_syscall_t stmt_syscall;
+        stmt_syscall.parse(syntax_lisp_tree);
+        expr = std::make_shared<stmt_syscall_t>(stmt_syscall);
 
       } else if (std::get_if<attr_var_t>(&nodes[0].node.attr)) {
         stmt_var_t stmt_var;
@@ -728,6 +753,42 @@ namespace aml_n {
       name = std::get<attr_ident_t>(nodes[1].node.attr).value;
 
       for (size_t i = 2; i < nodes.size(); ++i) {
+        stmt_expr_t stmt_expr;
+        stmt_expr.parse(nodes[i]);
+        args.push_back(stmt_expr);
+      }
+    }
+
+    std::string stmt_syscall_t::show(size_t deep) const {
+      std::string str;
+      str += attr_lp_t().show();
+      str += attr_syscall_t().show();
+      for (const auto& arg : args) {
+        str += "\n";
+        str += indent(deep);
+        str += arg.show(deep + 1);
+      }
+      str += attr_rp_t().show();
+      return str;
+    }
+
+    void stmt_syscall_t::parse(const syntax_lisp_tree_t& syntax_lisp_tree) {
+      DEBUG_LOGGER_TRACE_SA;
+      if (syntax_lisp_tree.is_leaf())
+        throw fatal_error_t("syscall: unexpected leaf at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
+
+      const auto& nodes = syntax_lisp_tree.nodes;
+
+      if (nodes.size() < 2)
+        throw fatal_error_t("syscall: expected 2 nodes at "
+            + syntax_lisp_tree.node.pos.show() + " " + syntax_lisp_tree.node.lexeme);
+
+      if (!nodes[0].is_leaf() || !std::get_if<attr_syscall_t>(&nodes[0].node.attr))
+        throw fatal_error_t("syscall: expected attr_syscall_t at "
+            + syntax_lisp_tree.nodes[0].node.pos.show() + " " + syntax_lisp_tree.nodes[0].node.lexeme);
+
+      for (size_t i = 1; i < nodes.size(); ++i) {
         stmt_expr_t stmt_expr;
         stmt_expr.parse(nodes[i]);
         args.push_back(stmt_expr);

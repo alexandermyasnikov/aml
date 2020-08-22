@@ -6,26 +6,70 @@
 
 
 
-(func test
-  (block ; first comment
-    (int 0) ; second comment
-    (block (int -10) (block (int +100) ) (int -12))
-    (set ret (call sum (int 100) (int 101) (int 102)))
-    (set ret (int 100))
-    (int 3)))
+(func add ; 2
+  (syscall
+    (int 1)
+    (arg 1)
+    (arg 2)))
 
+(func greater ; 2
+  (syscall
+    (int 2)
+    (arg 1)
+    (arg 2)))
 
-(func min
+(func mult ; 2
+  (syscall
+    (int 3)
+    (arg 1)
+    (arg 2)))
+
+(func sub ; 2
+  (syscall
+    (int 4)
+    (arg 1)
+    (arg 2)))
+
+(func product ; 2
+  (if
+    (call greater
+      (arg 1)
+      (int 1))
+    (call mult
+      (arg 1)
+      (call product
+        (call sub
+          (arg 1)
+          (int 1))))
+    (int 1)))
+
+(func perimeter ; 2
   (block
-    (set a (arg 1))
-    (set b (arg 2))
-    (set ret (if (call greater (var a) (var b)) (var a) (var b)))
-    (return (var ret))))
+    (set a
+      (arg 1))
+    (set b
+      (arg 2))
+    (set c
+      (call add
+        (call add
+          (var a)
+          (var a))
+        (call add
+          (var b)
+          (var b))))))
 
 (func main
   (block
-    (set tmp
-      (call sum
-        (call sum (int 1) (int 2))
-        (int 10)))
-    (call print (call ref (var tmp)))))
+    (set a
+      (int 10))
+    (set b
+      (int 3))
+    (set p
+      (call perimeter
+        (var a)
+        (var b)))
+    (call print
+      (var p))))
+
+
+
