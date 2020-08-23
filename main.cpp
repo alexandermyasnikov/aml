@@ -84,6 +84,7 @@ namespace aml_n {
 
     struct token_t {
       enum class type_t {
+        unknown,
         new_line,
         whitespace,
         lp,
@@ -106,7 +107,7 @@ namespace aml_n {
         int64_t,
         std::string>;
 
-      type_t      type = type_t::whitespace;
+      type_t      type = type_t::unknown;
       pos_t       pos  = { };
       std::string lexeme;
       value_t     value;
@@ -269,7 +270,7 @@ namespace aml_n {
       token_t token;
 
       while (token_t::next(it, ite, token)) {
-        DEBUG_LOGGER_LA("token: %zd \t %s \t %s", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
+        // DEBUG_LOGGER_LA("token: %zd \t %s \t %s", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
         if (token.is_primary())
           tokens.push_back(token);
       }
@@ -292,21 +293,43 @@ namespace aml_n {
 
 
 
-#if 0
   namespace syntax_lisp_analyzer_n {
 
     using namespace utils_n;
     using namespace lexical_analyzer_n;
 
     struct syntax_lisp_tree_t {
-      using node_t = token_t;
+      using node_t  = token_t;
       using nodes_t = std::deque<syntax_lisp_tree_t>;
 
-      node_t  node  = token_t{.attr = attr_empty_t{}};
+      node_t  node  = token_t{};
       nodes_t nodes = { };
 
       bool is_leaf() const {
-        return !std::get_if<attr_empty_t>(&node.attr);
+        return node.type != token_t::type_t::unknown
+          && node.type != token_t::type_t::lp
+          && node.type != token_t::type_t::rp;
+      }
+
+      std::string show(size_t deep = 0) const {
+        std::string str;
+
+        if (is_leaf()) {
+          str += node.show();
+        } else {
+          str += node_t{.type = token_t::type_t::lp}.show();
+          for (size_t i{}; i < nodes.size(); ++i) {
+            const auto& node = nodes[i];
+            if (i) {
+              str += node_t{.type = token_t::type_t::new_line}.show();
+              str += indent(deep);
+            }
+            str += node.show(deep + 1);
+          }
+          str += node_t{.type = token_t::type_t::rp}.show();
+        }
+
+        return str;
       }
     };
 
@@ -316,17 +339,22 @@ namespace aml_n {
       token_t token_last;
       for (const auto& token : tokens) {
         token_last = token;
-        if (std::get_if<attr_lp_t>(&token.attr)) {
-          stack.push(syntax_lisp_tree_t{});
-          stack.top().node.pos = token.pos;
-        } else if (std::get_if<attr_rp_t>(&token.attr)) {
+
+        if (token.type == token_t::type_t::lp) {
+          stack.push(syntax_lisp_tree_t{.node = token});
+
+        } else if (token.type == token_t::type_t::rp) {
           if (stack.size() < 2)
             throw fatal_error_t("syntax_lisp_analyzer: unexpected ')' at " + token.pos.show() + " " + token.lexeme);
           auto top = stack.top();
           stack.pop();
           stack.top().nodes.push_back(top);
-        } else {
+
+        } else if (token.is_primary()) {
           stack.top().nodes.push_back(syntax_lisp_tree_t{.node = token});
+
+        } else {
+          throw fatal_error_t("syntax_lisp_analyzer: expected primary token");
         }
       }
 
@@ -335,24 +363,7 @@ namespace aml_n {
 
       return stack.top();
     }
-
-    static std::string show(const syntax_lisp_tree_t& syntax_lisp_tree) {
-      std::string str;
-
-      if (syntax_lisp_tree.is_leaf()) {
-        str += show_attr(syntax_lisp_tree.node.attr);
-      } else {
-        str += attr_lp_t().show() + " ";
-        for (const auto& node : syntax_lisp_tree.nodes) {
-          str += show(node) + " ";
-        }
-        str += attr_rp_t().show();
-      }
-
-      return str;
-    }
   }
-#endif
 
 
 
@@ -1132,10 +1143,10 @@ struct interpreter_t {
     auto tokens = lexical_analyzer_n::process(code);
     DEBUG_LOGGER_LA("tokens: \n%s", lexical_analyzer_n::show_tokens(tokens).c_str());
 
-#if 0
     auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(tokens);
-    DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_analyzer_n::show(syntax_lisp_tree).c_str());
+    DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_tree.show().c_str());
 
+#if 0
     auto stmt_program = syntax_analyzer_n::process(syntax_lisp_tree);
     DEBUG_LOGGER_SA("syntax_tree: \n%s", syntax_analyzer_n::show(stmt_program).c_str());
 #endif
