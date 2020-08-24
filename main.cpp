@@ -9,7 +9,7 @@
 #define DEBUG_LOGGER_TRACE_LA            DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_LA(...)             DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
-#define DEBUG_LOGGER_TRACE_SA            DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_TRACE_SA            // DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_SA(...)             DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_ICG           DEBUG_LOGGER("icg  ", logger_indent_aml_t::indent)
@@ -48,8 +48,6 @@ namespace aml_n {
 
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
-    using data_t = std::vector<uint8_t>;
 
     static inline size_t column_start = 1;
     static inline size_t line_start = 1;
@@ -376,14 +374,14 @@ namespace aml_n {
     // GRAMMAR
     // program: func+
     // func:    FUNC    <name>  expr
-    // expr:    BLOCK   expr+
+    // expr:    BLOCK   set*    expr
     // expr:    IF      expr    expr expr
-    // expr:    SET     <name>  expr
     // expr:    CALL    <name>  arg*
     // expr:    SYSCALL expr+
     // expr:    INT     <digit>
     // expr:    VAR     <name>
     // expr:    ARG     <digit>
+    // set:     SET     <name>  expr
 
     struct syntax_error_t : fatal_error_t {
       syntax_error_t(const token_t& token, token_t::type_t type = token_t::type_t::unknown)
@@ -447,7 +445,6 @@ namespace aml_n {
       using expr_t = std::variant<
         std::shared_ptr<stmt_block_t>,
         std::shared_ptr<stmt_if_t>,
-        std::shared_ptr<stmt_set_t>,
         std::shared_ptr<stmt_call_t>,
         std::shared_ptr<stmt_syscall_t>,
         std::shared_ptr<stmt_var_t>,
@@ -461,7 +458,8 @@ namespace aml_n {
     };
 
     struct stmt_block_t : stmt_t {
-      std::deque<std::shared_ptr<stmt_expr_t>> stmt_exprs;
+      std::deque<std::shared_ptr<stmt_set_t>> stmt_sets;
+      std::shared_ptr<stmt_expr_t>            stmt_expr;
 
       stmt_block_t(const syntax_lisp_tree_t& tree);
       std::string show(size_t deep) const override;
@@ -576,7 +574,6 @@ namespace aml_n {
       switch (tree.nodes[0].node.type) {
         case token_t::type_t::key_block:     expr = std::make_shared<stmt_block_t>(tree);  break;
         case token_t::type_t::key_if:        expr = std::make_shared<stmt_if_t>(tree);     break;
-        case token_t::type_t::key_set:       expr = std::make_shared<stmt_set_t>(tree);    break;
         case token_t::type_t::key_call:      expr = std::make_shared<stmt_call_t>(tree);   break;
         // case token_t::type_t::key_syscall:   expr = std::make_shared<stmt_syscall_t>(tree); break;
         case token_t::type_t::key_var:       expr = std::make_shared<stmt_var_t>(tree);    break;
@@ -599,20 +596,25 @@ namespace aml_n {
       check_size_gt(tree, 2);
       check_type(tree.nodes[0], token_t::type_t::key_block);
 
-      for (size_t i = 1; i < tree.nodes.size(); ++i) {
-        stmt_exprs.push_back(std::make_shared<stmt_expr_t>(tree.nodes[i]));
+      for (size_t i = 1; i < tree.nodes.size() - 1; ++i) {
+        stmt_sets.push_back(std::make_shared<stmt_set_t>(tree.nodes[i]));
       }
+
+      stmt_expr = std::make_shared<stmt_expr_t>(tree.nodes[tree.nodes.size() - 1]);
     }
 
     std::string stmt_block_t::show(size_t deep) const {
       std::string str;
       str += token_t{.type = token_t::type_t::lp}.show();
       str += token_t{.type = token_t::type_t::key_block}.show();
-      for (const auto& stmt_expr : stmt_exprs) {
+      for (const auto& stmt_set : stmt_sets) {
         str += token_t{.type = token_t::type_t::new_line}.show();
         str += indent(deep);
-        str += stmt_expr->show(deep + 1);
+        str += stmt_set->show(deep + 1);
       }
+      str += token_t{.type = token_t::type_t::new_line}.show();
+      str += indent(deep);
+      str += stmt_expr->show(deep + 1);
       str += token_t{.type = token_t::type_t::rp}.show();
       return str;
     }
@@ -775,6 +777,8 @@ namespace aml_n {
 
   namespace semantic_analyzer_n {
 
+    using namespace utils_n;
+    using namespace syntax_analyzer_n;
   }
 
 
@@ -866,6 +870,7 @@ namespace aml_n {
       }
     }
   }
+#endif
 
 
 
@@ -874,6 +879,7 @@ namespace aml_n {
 
 
 
+#if 0
   namespace code_generator_n {
     using namespace intermediate_code_generator_n;
 
@@ -942,9 +948,7 @@ struct interpreter_t {
     auto stmt = syntax_analyzer_n::process(syntax_lisp_tree);
     DEBUG_LOGGER_SA("syntax_tree: \n%s", stmt->show({}).c_str());
 
-    // TODO
-    // intermediate_code_generator_n::instructions_t instructions;
-    // intermediate_code_generator_n::functions_t functions;
+    // intermediate_code_generator_n::code_t code;
     // intermediate_code_generator_n::process(instructions, functions, cmds_str);
 
     // utils_n::data_t text;
