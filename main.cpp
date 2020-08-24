@@ -127,23 +127,23 @@ namespace aml_n {
         return lexeme;
 #else
         switch (type) {
-          case type_t::new_line:     return "\n";
-          case type_t::whitespace:   return " ";
-          case type_t::lp:           return "(";
-          case type_t::rp:           return ")";
-          case type_t::key_func:     return "func";
-          case type_t::key_block:    return "block";
-          case type_t::key_if:       return "if";
-          case type_t::key_set:      return "set";
-          case type_t::key_call:     return "call";
-          case type_t::key_syscall:  return "syscall";
-          case type_t::key_var:      return "var";
-          case type_t::key_arg:      return "arg";
-          case type_t::key_int:      return "int";
-          case type_t::integer:      return std::to_string(std::get<int64_t>(value));
-          case type_t::ident:        return std::get<std::string>(value);
-          case type_t::eof:          return "\0";
-          default:                   return "(unknown)";
+          case type_t::new_line:    return "\n";
+          case type_t::whitespace:  return " ";
+          case type_t::lp:          return "(";
+          case type_t::rp:          return ")";
+          case type_t::key_func:    return "func";
+          case type_t::key_block:   return "block";
+          case type_t::key_if:      return "if";
+          case type_t::key_set:     return "set";
+          case type_t::key_call:    return "call";
+          case type_t::key_syscall: return "syscall";
+          case type_t::key_var:     return "var";
+          case type_t::key_arg:     return "arg";
+          case type_t::key_int:     return "int";
+          case type_t::integer:     { const auto* p = std::get_if<int64_t>(&value);     return p ? std::to_string(*p) : lexeme; }
+          case type_t::ident:       { const auto* p = std::get_if<std::string>(&value); return p ? *p : lexeme; }
+          case type_t::eof:         return "\0";
+          default:                  return "(unknown)";
         }
 #endif
       }
@@ -376,7 +376,7 @@ namespace aml_n {
     // func:    FUNC    <name>  expr
     // expr:    BLOCK   set*    expr
     // expr:    IF      expr    expr expr
-    // expr:    CALL    <name>  arg*
+    // expr:    CALL    expr    expr*
     // expr:    SYSCALL expr+
     // expr:    INT     <digit>
     // expr:    VAR     <name>
@@ -483,7 +483,7 @@ namespace aml_n {
     };
 
     struct stmt_call_t : stmt_t {
-      std::string name = "<name>";
+      std::shared_ptr<stmt_expr_t>              name;
       std::vector<std::shared_ptr<stmt_expr_t>> args;
 
       stmt_call_t(const syntax_lisp_tree_t& tree);
@@ -679,9 +679,8 @@ namespace aml_n {
       check_not_leaf(tree);
       check_size_gt(tree, 2);
       check_type(tree.nodes[0], token_t::type_t::key_call);
-      check_type(tree.nodes[1], token_t::type_t::ident);
 
-      name = std::get<std::string>(tree.nodes[1].node.value);
+      name = std::make_shared<stmt_expr_t>(tree.nodes[1]);
       for (size_t i = 2; i < tree.nodes.size(); ++i) {
         args.push_back(std::make_shared<stmt_expr_t>(tree.nodes[i]));
       }
@@ -691,8 +690,9 @@ namespace aml_n {
       std::string str;
       str += token_t{.type = token_t::type_t::lp}.show();
       str += token_t{.type = token_t::type_t::key_call}.show();
-      str += token_t{.type = token_t::type_t::whitespace}.show();
-      str += name;
+      str += token_t{.type = token_t::type_t::new_line}.show();
+      str += indent(deep);
+      str += name->show(deep + 1);
       for (const auto& arg : args) {
         str += token_t{.type = token_t::type_t::new_line}.show();
         str += indent(deep);
