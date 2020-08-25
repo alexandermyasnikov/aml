@@ -51,6 +51,7 @@ namespace aml_n {
 
     static inline size_t column_start = 1;
     static inline size_t line_start = 1;
+    static inline std::string var_prefix = "var_";
 
     static std::string indent(size_t count) {
       static size_t tab_size = 2;
@@ -140,8 +141,10 @@ namespace aml_n {
           case type_t::key_var:     return "var";
           case type_t::key_arg:     return "arg";
           case type_t::key_int:     return "int";
-          case type_t::integer:     { const auto* p = std::get_if<int64_t>(&value);     return p ? std::to_string(*p) : lexeme; }
-          case type_t::ident:       { const auto* p = std::get_if<std::string>(&value); return p ? *p : lexeme; }
+          case type_t::integer:
+            { const auto* p = std::get_if<int64_t>(&value);     return p ? std::to_string(*p) : "<integer>"; }
+          case type_t::ident:
+            { const auto* p = std::get_if<std::string>(&value); return p ? *p : "<ident>"; }
           case type_t::eof:         return "\0";
           default:                  return "(unknown)";
         }
@@ -302,7 +305,7 @@ namespace aml_n {
       using nodes_t = std::deque<syntax_lisp_tree_t>;
 
       node_t  node  = token_t{};
-      nodes_t nodes = { };
+      nodes_t nodes = {};
 
       bool is_leaf() const {
         return node.type != token_t::type_t::unknown
@@ -409,6 +412,116 @@ namespace aml_n {
         throw syntax_error_t(tree.node, type);
     }
 
+    struct var_info_t {
+      size_t id  = {};
+
+      std::string show() const {
+        return std::to_string(id);
+      }
+    };
+
+    struct env_t;
+    using env_sptr_t = std::shared_ptr<env_t>;
+
+    struct env_t : std::enable_shared_from_this<env_t> {
+      using key_t = std::string;
+      using val_t = var_info_t;
+
+      std::map<key_t,  val_t>   vars_global;
+      std::map<size_t, val_t>   vars_local;
+      env_sptr_t                parent;
+      size_t                    id;
+
+      env_t(env_sptr_t parent = nullptr) : parent(parent), id{} { }
+
+      val_t& def_var(const key_t& key) {
+        auto it = vars_global.find(key);
+        if (it != vars_global.end())
+          throw fatal_error_t("env_t: '" + key + "' is exists");
+        auto& val = vars_global[key];
+        val.id = get_id()++;
+        return val;
+      }
+
+      const val_t& get_var(const key_t& key) const {
+        auto env = this->shared_from_this();
+        while (env) {
+          auto &vars_global = env->vars_global;
+          auto it = vars_global.find(key);
+          if (it != vars_global.end()) {
+            return it->second;
+          }
+          env = env->parent;
+        }
+        throw fatal_error_t("env_t: '" + key + "' is not exists");
+      }
+
+      size_t& get_id() {
+        auto env = this->shared_from_this();
+        size_t* id = &env->id;
+        while (env) {
+          id = &env->id;
+          env = env->parent;
+        }
+        return *id;
+      }
+
+      void save_vars() {
+        if (!parent)
+          return;
+
+        for (const auto& [_, val] : vars_local) {
+          parent->vars_local[val.id] = val;
+        }
+
+        for (const auto& [_, val] : vars_global) {
+          parent->vars_local[val.id] = val;
+        }
+      }
+
+      std::string show() const {
+        std::string str;
+        auto env = this->shared_from_this();
+        size_t deep = {};
+        while (env) {
+          auto &vars_global = env->vars_global;
+          for (const auto& [key, val] : vars_global) {
+            str += "\n; vars_global:" + indent(deep) + key + " : " + val.show();
+          }
+          env = env->parent;
+          deep++;
+        }
+        for (const auto& [_, val] : vars_local) {
+          str += "\n; vars_local: " + val.show();
+        }
+        return str;
+      }
+    };
+
+#if 0
+    struct symbols_t {
+      struct func_info_t {
+        std::string name;
+        std::deque<std::string> vars;
+      };
+
+      std::deque<func_info_t> funcs;
+
+      std::string show() {
+        std::string str;
+        for (size_t i{}; i < funcs.size(); ++i) {
+          const auto& func = funcs[i];
+          str += std::to_string(i) + ": \t" + func.name + "\n";
+          for (size_t i{}; i < func.vars.size(); ++i) {
+            const auto& var = func.vars[i];
+            str += "\t" + std::to_string(i) + ": \t" + var + "\n";
+          }
+        }
+        return str;
+      }
+    };
+#endif
+
     struct stmt_program_t;
     struct stmt_func_t;
     struct stmt_expr_t;
@@ -427,17 +540,21 @@ namespace aml_n {
     };
 
     struct stmt_program_t : stmt_t {
-      std::deque<std::shared_ptr<stmt_func_t>> funcs;
+      using funcs_t = std::deque<std::shared_ptr<stmt_func_t>>;
+
+      env_sptr_t env;
+      funcs_t    funcs;
 
       stmt_program_t(const syntax_lisp_tree_t& tree);
       std::string show(size_t deep) const override;
     };
 
     struct stmt_func_t : stmt_t {
-      std::string name = "<name>";
+      size_t id = {};
       std::shared_ptr<stmt_expr_t> body;
+      std::shared_ptr<env_t>       env;
 
-      stmt_func_t(const syntax_lisp_tree_t& tree);
+      stmt_func_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
     };
 
@@ -453,7 +570,7 @@ namespace aml_n {
 
       expr_t expr;
 
-      stmt_expr_t(const syntax_lisp_tree_t& tree);
+      stmt_expr_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
     };
 
@@ -461,7 +578,7 @@ namespace aml_n {
       std::deque<std::shared_ptr<stmt_set_t>> stmt_sets;
       std::shared_ptr<stmt_expr_t>            stmt_expr;
 
-      stmt_block_t(const syntax_lisp_tree_t& tree);
+      stmt_block_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
     };
 
@@ -470,15 +587,15 @@ namespace aml_n {
       std::shared_ptr<stmt_expr_t> stmt_expr_then;
       std::shared_ptr<stmt_expr_t> stmt_expr_else;
 
-      stmt_if_t(const syntax_lisp_tree_t& tree);
+      stmt_if_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
     };
 
     struct stmt_set_t : stmt_t {
-      std::string name = "<name>";
+      size_t id = {};
       std::shared_ptr<stmt_expr_t> body;
 
-      stmt_set_t(const syntax_lisp_tree_t& tree);
+      stmt_set_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
     };
 
@@ -486,7 +603,7 @@ namespace aml_n {
       std::shared_ptr<stmt_expr_t>              name;
       std::vector<std::shared_ptr<stmt_expr_t>> args;
 
-      stmt_call_t(const syntax_lisp_tree_t& tree);
+      stmt_call_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
     };
 
@@ -498,21 +615,21 @@ namespace aml_n {
     };
 
     struct stmt_var_t : stmt_t {
-      std::string value = "<name>";
+      size_t id = {};
 
-      stmt_var_t(const syntax_lisp_tree_t& tree);
+      stmt_var_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
     };
 
     struct stmt_arg_t : stmt_t {
-      int64_t value = { };
+      int64_t value = {};
 
       stmt_arg_t(const syntax_lisp_tree_t& tree);
       std::string show(size_t deep) const override;
     };
 
     struct stmt_int_t : stmt_t {
-      int64_t value = { };
+      int64_t value = {};
 
       stmt_int_t(const syntax_lisp_tree_t& tree);
       std::string show(size_t deep) const override;
@@ -525,8 +642,10 @@ namespace aml_n {
 
       check_not_leaf(tree);
 
+      env = std::make_shared<env_t>();
+
       for (const auto& node : tree.nodes) {
-        funcs.push_back(std::make_shared<stmt_func_t>(node));
+        funcs.push_back(std::make_shared<stmt_func_t>(node, env));
       }
     }
 
@@ -540,7 +659,7 @@ namespace aml_n {
       return str;
     }
 
-    stmt_func_t::stmt_func_t(const syntax_lisp_tree_t& tree) {
+    stmt_func_t::stmt_func_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
       DEBUG_LOGGER_TRACE_SA;
 
       check_not_leaf(tree);
@@ -548,8 +667,12 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_func);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      name = std::get<std::string>(tree.nodes[1].node.value);
-      body = std::make_shared<stmt_expr_t>(tree.nodes[2]);
+      auto name = std::get<std::string>(tree.nodes[1].node.value);
+      auto& var_info = env->def_var(name);
+      id = var_info.id;
+
+      this->env = std::make_shared<env_t>(env);
+      body = std::make_shared<stmt_expr_t>(tree.nodes[2], this->env);
     }
 
     std::string stmt_func_t::show(size_t deep) const {
@@ -557,26 +680,28 @@ namespace aml_n {
       str += token_t{.type = token_t::type_t::lp}.show();
       str += token_t{.type = token_t::type_t::key_func}.show();
       str += token_t{.type = token_t::type_t::whitespace}.show();
-      str += name;
+      str += var_prefix + std::to_string(id);
       str += token_t{.type = token_t::type_t::new_line}.show();
       str += indent(deep);
       str += body->show(deep + 1);
       str += token_t{.type = token_t::type_t::rp}.show();
+
+      str += "\n" + env->show(); // TODO
       return str;
     }
 
-    stmt_expr_t::stmt_expr_t(const syntax_lisp_tree_t& tree) {
+    stmt_expr_t::stmt_expr_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
       DEBUG_LOGGER_TRACE_SA;
 
       check_not_leaf(tree);
       check_size_gt(tree, 1);
 
       switch (tree.nodes[0].node.type) {
-        case token_t::type_t::key_block:     expr = std::make_shared<stmt_block_t>(tree);  break;
-        case token_t::type_t::key_if:        expr = std::make_shared<stmt_if_t>(tree);     break;
-        case token_t::type_t::key_call:      expr = std::make_shared<stmt_call_t>(tree);   break;
+        case token_t::type_t::key_block:     expr = std::make_shared<stmt_block_t>(tree, env);  break;
+        case token_t::type_t::key_if:        expr = std::make_shared<stmt_if_t>(tree, env);     break;
+        case token_t::type_t::key_call:      expr = std::make_shared<stmt_call_t>(tree, env);   break;
         // case token_t::type_t::key_syscall:   expr = std::make_shared<stmt_syscall_t>(tree); break;
-        case token_t::type_t::key_var:       expr = std::make_shared<stmt_var_t>(tree);    break;
+        case token_t::type_t::key_var:       expr = std::make_shared<stmt_var_t>(tree, env);    break;
         case token_t::type_t::key_arg:       expr = std::make_shared<stmt_arg_t>(tree);    break;
         case token_t::type_t::key_int:       expr = std::make_shared<stmt_int_t>(tree);    break;
         default: throw syntax_error_t(tree.nodes[0].node);
@@ -589,18 +714,22 @@ namespace aml_n {
       return str;
     }
 
-    stmt_block_t::stmt_block_t(const syntax_lisp_tree_t& tree) {
+    stmt_block_t::stmt_block_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
       DEBUG_LOGGER_TRACE_SA;
 
       check_not_leaf(tree);
       check_size_gt(tree, 2);
       check_type(tree.nodes[0], token_t::type_t::key_block);
 
+      auto env_block = std::make_shared<env_t>(env);
+
       for (size_t i = 1; i < tree.nodes.size() - 1; ++i) {
-        stmt_sets.push_back(std::make_shared<stmt_set_t>(tree.nodes[i]));
+        stmt_sets.push_back(std::make_shared<stmt_set_t>(tree.nodes[i], env_block));
       }
 
-      stmt_expr = std::make_shared<stmt_expr_t>(tree.nodes[tree.nodes.size() - 1]);
+      stmt_expr = std::make_shared<stmt_expr_t>(tree.nodes[tree.nodes.size() - 1], env_block);
+
+      env_block->save_vars();
     }
 
     std::string stmt_block_t::show(size_t deep) const {
@@ -619,16 +748,16 @@ namespace aml_n {
       return str;
     }
 
-    stmt_if_t::stmt_if_t(const syntax_lisp_tree_t& tree) {
+    stmt_if_t::stmt_if_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
       DEBUG_LOGGER_TRACE_SA;
 
       check_not_leaf(tree);
       check_size_eq(tree, 4);
       check_type(tree.nodes[0], token_t::type_t::key_if);
 
-      stmt_expr_if   = std::make_shared<stmt_expr_t>(tree.nodes[1]);
-      stmt_expr_then = std::make_shared<stmt_expr_t>(tree.nodes[2]);
-      stmt_expr_else = std::make_shared<stmt_expr_t>(tree.nodes[3]);
+      stmt_expr_if   = std::make_shared<stmt_expr_t>(tree.nodes[1], env);
+      stmt_expr_then = std::make_shared<stmt_expr_t>(tree.nodes[2], env);
+      stmt_expr_else = std::make_shared<stmt_expr_t>(tree.nodes[3], env);
     }
 
     std::string stmt_if_t::show(size_t deep) const {
@@ -648,7 +777,7 @@ namespace aml_n {
       return str;
     }
 
-    stmt_set_t::stmt_set_t(const syntax_lisp_tree_t& tree) {
+    stmt_set_t::stmt_set_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
       DEBUG_LOGGER_TRACE_SA;
 
       check_not_leaf(tree);
@@ -656,8 +785,11 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_set);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      name = std::get<std::string>(tree.nodes[1].node.value);
-      body = std::make_shared<stmt_expr_t>(tree.nodes[2]);
+      auto name = std::get<std::string>(tree.nodes[1].node.value);
+      auto& var_info = env->def_var(name);
+      id = var_info.id;
+
+      body = std::make_shared<stmt_expr_t>(tree.nodes[2], env);
     }
 
     std::string stmt_set_t::show(size_t deep) const {
@@ -665,7 +797,7 @@ namespace aml_n {
       str += token_t{.type = token_t::type_t::lp}.show();
       str += token_t{.type = token_t::type_t::key_set}.show();
       str += token_t{.type = token_t::type_t::whitespace}.show();
-      str += name;
+      str += var_prefix + std::to_string(id);
       str += token_t{.type = token_t::type_t::new_line}.show();
       str += indent(deep);
       str += body->show(deep + 1);
@@ -673,16 +805,16 @@ namespace aml_n {
       return str;
     }
 
-    stmt_call_t::stmt_call_t(const syntax_lisp_tree_t& tree) {
+    stmt_call_t::stmt_call_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
       DEBUG_LOGGER_TRACE_SA;
 
       check_not_leaf(tree);
       check_size_gt(tree, 2);
       check_type(tree.nodes[0], token_t::type_t::key_call);
 
-      name = std::make_shared<stmt_expr_t>(tree.nodes[1]);
+      name = std::make_shared<stmt_expr_t>(tree.nodes[1], env);
       for (size_t i = 2; i < tree.nodes.size(); ++i) {
-        args.push_back(std::make_shared<stmt_expr_t>(tree.nodes[i]));
+        args.push_back(std::make_shared<stmt_expr_t>(tree.nodes[i], env));
       }
     }
 
@@ -704,7 +836,7 @@ namespace aml_n {
 
     // syscall
 
-    stmt_var_t::stmt_var_t(const syntax_lisp_tree_t& tree) {
+    stmt_var_t::stmt_var_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
       DEBUG_LOGGER_TRACE_SA;
 
       check_not_leaf(tree);
@@ -712,7 +844,9 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_var);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      value = std::get<std::string>(tree.nodes[1].node.value);
+      auto name = std::get<std::string>(tree.nodes[1].node.value);
+      auto& var_info = env->get_var(name);
+      id = var_info.id;
     }
 
     std::string stmt_var_t::show(size_t deep) const {
@@ -720,7 +854,7 @@ namespace aml_n {
       str += token_t{.type = token_t::type_t::lp}.show();
       str += token_t{.type = token_t::type_t::key_var}.show();
       str += token_t{.type = token_t::type_t::whitespace}.show();
-      str += value;
+      str += var_prefix + std::to_string(id);
       str += token_t{.type = token_t::type_t::rp}.show();
       return str;
     }
@@ -767,8 +901,7 @@ namespace aml_n {
       return str;
     }
 
-    using stmt_sptr_t = std::shared_ptr<stmt_t>;
-    stmt_sptr_t process(const syntax_lisp_tree_t& tree) {
+    std::shared_ptr<stmt_program_t> process(const syntax_lisp_tree_t& tree) {
       return std::make_shared<stmt_program_t>(tree);
     }
   }
@@ -945,8 +1078,8 @@ struct interpreter_t {
     auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(tokens);
     DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_tree.show().c_str());
 
-    auto stmt = syntax_analyzer_n::process(syntax_lisp_tree);
-    DEBUG_LOGGER_SA("syntax_tree: \n%s", stmt->show({}).c_str());
+    auto program_stmt = syntax_analyzer_n::process(syntax_lisp_tree);
+    DEBUG_LOGGER_SA("syntax_tree: \n%s", program_stmt->show({}).c_str());
 
     // intermediate_code_generator_n::code_t code;
     // intermediate_code_generator_n::process(instructions, functions, cmds_str);

@@ -6,57 +6,81 @@
 
 
 
-(func add ; 2
-  (syscall
+(func add
+  (call ; (syscall
     (int 1)
     (arg 1)
     (arg 2)))
 
-(func greater ; 2
-  (syscall
+(func greater
+  (call ; (syscall
     (int 2)
     (arg 1)
     (arg 2)))
 
-(func mult ; 2
-  (syscall
+(func mult
+  (call ; (syscall
     (int 3)
     (arg 1)
     (arg 2)))
 
-(func sub ; 2
-  (syscall
+(func sub
+  (call ; (syscall
     (int 4)
     (arg 1)
     (arg 2)))
 
-(func product ; 2
+(func print
+  (call ; (syscall
+    (int 5)
+    (arg 1)))
+
+
+
+(func product
   (if
-    (call greater
+    (call
+      (var greater)
       (arg 1)
       (int 1))
-    (call mult
+    (call
+      (var mult)
       (arg 1)
-      (call product
-        (call sub
+      (call
+        (var product)
+        (call
+          (var sub)
           (arg 1)
           (int 1))))
     (int 1)))
 
-(func perimeter ; 2
+(func perimeter
   (block
     (set a
       (arg 1))
     (set b
       (arg 2))
     (set c
-      (call add
-        (call add
+      (call
+        (var add)
+        (call
+          (var add)
           (var a)
           (var a))
-        (call add
+        (call
+          (var add)
           (var b)
-          (var b))))))
+          (var b))))
+    (var c)))
+
+(func test_1
+  (block
+    (set a (block (set aa (var a)) (int 1)))
+    (set b (block (set aa (var a)) (int 1)))
+    (set c (block (set aa (var c)) (int 1)))
+    (set aa (var a))
+    (set bb (var bb))
+    (int 1)))
 
 (func main
   (block
@@ -65,10 +89,12 @@
     (set b
       (int 3))
     (set p
-      (call perimeter
+      (call
+        (var perimeter)
         (var a)
         (var b)))
-    (call print
+    (call
+      (var print)
       (var p))))
 
 

@@ -17,13 +17,12 @@ Version: 0.1
 
 
 
-### Особенности:
+### Архитектура:
 
 * Процедуры работают только с аргументами, локальными даннами и глобальными функциями.
-* Все данные в code  выровнены по u8.
-* Все данные в data  выровнены по u8.
-* Все данные в stack выровнены по u8.
-* Все данные в regs  выровнены по u64.
+* Данные в code  выровнены по u8.
+* Данные в stack выровнены по u64.
+* // Данные в regs  выровнены по u64.
 
 
 
@@ -36,27 +35,47 @@ Version: 0.1
 ### Пример кода: // TODO
 
 ```
-(FUNC sum
-  (BLOCK
-    (SET ret (INT 1))
-    (SET ret (CALL __add (ARG 1) (ARG 2)))
-    (RETURN ret)))
+(func product
+  (if
+    (call greater
+      (arg 1)
+      (int 1))
+    (call mult
+      (arg 1)
+      (call product
+        (call sub
+          (arg 1)
+          (int 1))))
+    (int 1)))
 
-(FUNC main
-  (BLOCK
-    (SET tmp
-      (CALL sum
-        (CALL sum 1 2)
-        (INT 10)))
-    (CALL print tmp)))
+(func main
+  (call product
+    (call add (int 2) (int 5))))
 ```
-
 
 
 ### GENERATION
 
 ```
-CODE:
+REGS:
+  rip
+  rbp
+  rsp
+
+(call <name> <expr1> <expr2> ... <exprN>) ->
+  PUSH <name>
+  GEN expr1
+  GEN expr2
+  ...
+  GEN exprN
+  PUSH <N>
+  CALL
+
+(int <digit>) ->
+  PUSH <digit>
+
+(arg <digit>) ->
+  XXX TODO
 
 (BLOCK a b c) ->
   GEN a
