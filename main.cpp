@@ -235,6 +235,9 @@ namespace aml_n {
         std::regex_constants::match_flag_type flags =
             std::regex_constants::match_continuous | std::regex_constants::match_not_null;
 
+        const rule_t* match_rule = nullptr;
+        std::smatch match_best;
+
         for (const auto& rule : rules) {
           if (!std::regex_search(it, ite, m, rule.regex, flags))
             continue;
@@ -242,23 +245,30 @@ namespace aml_n {
           if (m.position())
             throw fatal_error_t("lexical_analyzer: unknown position at " + token.pos.show());
 
-          it               += m.length();
-          token.pos.column += token.pos.length;
-          token.pos.length  = m.length();
-          token.lexeme      = m.str();
-          token.value       = rule.get_value(token.lexeme);
-          token.type        = rule.type;
-
-          if (rule.type == type_t::new_line) {
-            token.pos.line++;
-            token.pos.length = 0;
-            token.pos.column = column_start;
+          if (m.length() > (!match_best.empty() ? match_best.length() : 0)) {
+            match_best = m;
+            match_rule = &rule;
           }
-
-          return true;
         }
 
-        return false;
+        if (!match_rule) {
+          return false;
+        }
+
+        it               += match_best.length();
+        token.pos.column += token.pos.length;
+        token.pos.length  = match_best.length();
+        token.lexeme      = match_best.str();
+        token.value       = match_rule->get_value(token.lexeme);
+        token.type        = match_rule->type;
+
+        if (match_rule->type == type_t::new_line) {
+          token.pos.line++;
+          token.pos.length = 0;
+          token.pos.column = column_start;
+        }
+
+        return true;
       }
     };
 
