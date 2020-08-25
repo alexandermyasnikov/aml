@@ -216,7 +216,7 @@ namespace aml_n {
           [](const std::string& lexeme) { return stol(lexeme); },
         }, {
           type_t::ident,
-          std::regex(R"(\w+)"),
+          std::regex(R"([\w<=>&|+\-\!:*^\/]+)"),
           [](const std::string& lexeme) { return lexeme; },
         },
       };
@@ -282,7 +282,7 @@ namespace aml_n {
       token_t token;
 
       while (token_t::next(it, ite, token)) {
-        // DEBUG_LOGGER_LA("token: %zd \t %s \t %s", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
+        // DEBUG_LOGGER_LA("token: %zd \t '%s' \t '%s'", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
         if (token.is_primary())
           tokens.push_back(token);
       }
@@ -496,13 +496,13 @@ namespace aml_n {
         while (env) {
           auto &vars_global = env->vars_global;
           for (const auto& [key, val] : vars_global) {
-            str += "\n; vars_global:" + indent(deep) + key + " : " + val.show();
+            str += "\n; vars_global:" + indent(deep) + "'" + key + "' : " + val.show();
           }
           env = env->parent;
           deep++;
         }
         for (const auto& [_, val] : vars_local) {
-          str += "\n; vars_local: " + val.show();
+          str += "\n; vars_local: '" + val.show() + "'";
         }
         return str;
       }
