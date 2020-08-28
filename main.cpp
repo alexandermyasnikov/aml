@@ -6,8 +6,8 @@
 
 #include "debug_logger.h"
 
-#define DEBUG_LOGGER_TRACE_LA            DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_LA(...)             DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_TRACE_LA            // DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_LA(...)             // DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_SA            // DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_SA(...)             DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
@@ -282,7 +282,7 @@ namespace aml_n {
       token_t token;
 
       while (token_t::next(it, ite, token)) {
-        // DEBUG_LOGGER_LA("token: %zd \t '%s' \t '%s'", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
+        DEBUG_LOGGER_LA("token: %zd \t '%s' \t '%s'", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
         if (token.is_primary())
           tokens.push_back(token);
       }
@@ -323,7 +323,7 @@ namespace aml_n {
           && node.type != token_t::type_t::rp;
       }
 
-      std::string show(size_t deep = 0) const {
+      std::string show(size_t deep) const {
         std::string str;
 
         if (is_leaf()) {
@@ -440,16 +440,16 @@ namespace aml_n {
       std::map<key_t,  val_t>   vars_global;
       std::map<size_t, val_t>   vars_local;
       env_sptr_t                parent;
-      size_t                    id;
+      static inline size_t      id;
 
-      env_t(env_sptr_t parent = nullptr) : parent(parent), id{} { }
+      env_t(env_sptr_t parent = nullptr) : parent(parent) { }
 
       val_t& def_var(const key_t& key) {
         auto it = vars_global.find(key);
         if (it != vars_global.end())
           throw fatal_error_t("env_t: '" + key + "' is exists");
         auto& val = vars_global[key];
-        val.id = get_id()++;
+        val.id = id++;
         return val;
       }
 
@@ -464,16 +464,6 @@ namespace aml_n {
           env = env->parent;
         }
         throw fatal_error_t("env_t: '" + key + "' is not exists");
-      }
-
-      size_t& get_id() {
-        auto env = this->shared_from_this();
-        size_t* id = &env->id;
-        while (env) {
-          id = &env->id;
-          env = env->parent;
-        }
-        return *id;
       }
 
       void save_vars() {
@@ -718,7 +708,7 @@ namespace aml_n {
       }
     }
 
-    std::string stmt_expr_t::show(size_t deep = 0) const {
+    std::string stmt_expr_t::show(size_t deep) const {
       std::string str;
       std::visit(overloaded{[&str, deep] (const auto &expr) { str = expr->show(deep); } }, expr);
       return str;
@@ -932,85 +922,7 @@ namespace aml_n {
     using namespace utils_n;
     using namespace syntax_analyzer_n;
 
-    union instruction_t {
-      uint16_t value;
-      struct {
-        uint8_t  op  : 4;
-        uint8_t  rd  : 4;
-        uint8_t  rs1 : 4;
-        uint8_t  rs2 : 4;
-      } __attribute__((packed)) cmd;
-      struct {
-        uint8_t  op : 4;
-        uint8_t  rd : 4;
-        uint8_t  val;
-      } __attribute__((packed)) cmd_set;
-    };
-
     void process(instructions_t& instructions, functions_t& functions, const cmds_str_t& cmds_str) {
-      for (auto cmd_str : cmds_str) {
-        if (cmd_str.at(0) == "SET" && cmd_str.size() == 3) {
-          auto op = opcode_index(0, cmd_str.at(0));
-          auto rd = reg_index(cmd_str.at(1));
-          reg_value_t value = strtol(cmd_str.at(2).c_str(), nullptr, 0);
-          macro_set(instructions, rd, value);
-
-        } else if (cmd_str.at(0) == "FUNCTION" && cmd_str.size() == 2) {
-          auto name = cmd_str.at(1);
-
-          if (functions.find(name) != functions.end())
-            throw fatal_error_t("function exists");
-
-          functions[name] = instructions.size() * sizeof(instruction_t);
-
-        } else if (cmd_str.at(0) == "LABEL") {
-          throw fatal_error_t("LABEL TODO");
-
-        } else if (cmd_str.at(0) == "ADDRESS" && cmd_str.size() == 3) {
-          auto rd   = reg_index(cmd_str.at(1));
-          auto name = cmd_str.at(2);
-
-          if (functions.find(name) == functions.end())
-            throw fatal_error_t("function not exists");
-
-          macro_set(instructions, rd, functions[name]);
-
-        } else if (cmd_str.size() == 4) {
-          auto op  = opcode_index(0, cmd_str.at(0));
-          auto rd  = reg_index(cmd_str.at(1));
-          auto rs1 = reg_index(cmd_str.at(2));
-          auto rs2 = reg_index(cmd_str.at(3));
-          instructions.push_back({ .cmd  = { op, rd, rs1, rs2 } });
-
-        } else if (cmd_str.size() == 3) {
-          auto op1 = opcode_index(0, "OTH0");
-          auto op2 = opcode_index(1, cmd_str.at(0));
-          auto rd  = reg_index(cmd_str.at(1));
-          auto rs  = reg_index(cmd_str.at(2));
-          instructions.push_back({ .cmd  = { op1, op2, rd, rs } });
-
-        } else if (cmd_str.size() == 2) {
-          auto op1 = opcode_index(0, "OTH0");
-          auto op2 = opcode_index(1, "OTH1");
-          auto op3 = opcode_index(2, cmd_str.at(0));
-          auto rd  = reg_index(cmd_str.at(1));
-          instructions.push_back({ .cmd  = { op1, op2, op3, rd } });
-
-        } else if (cmd_str.size() == 1) {
-          auto op1 = opcode_index(0, "OTH0");
-          auto op2 = opcode_index(1, "OTH1");
-          auto op3 = opcode_index(2, "OTH2");
-          auto op4 = opcode_index(3, cmd_str.at(0));
-          instructions.push_back({ .cmd  = { op1, op2, op3, op4 } });
-
-        } else {
-          throw fatal_error_t("unknown cmd format");
-        }
-      }
-
-      for (size_t i = 0; i < instructions.size(); ++i) {
-        DEBUG_LOGGER_ICG("instruction: %08x '%s'", i * sizeof(instruction_t), print_instruction(instructions[i]).c_str());
-      }
     }
   }
 #endif
@@ -1051,26 +963,6 @@ namespace aml_n {
 
       if (functions.find("__start") == functions.end())
         throw fatal_error_t("__start not exists");
-
-      data_t stack(0xFFFF, 0);
-
-      registers_set_t* registers_set = reinterpret_cast<registers_set_t*>(stack.data());
-      (*registers_set)[reg_index("RP")] = 0;
-      (*registers_set)[reg_index("RI")] = functions.at("__start");
-      (*registers_set)[reg_index("RB")] = sizeof(registers_set_t);
-      (*registers_set)[reg_index("RS")] = (*registers_set)[reg_index("RB")];
-
-      DEBUG_LOGGER_EXEC("stack frame: '%s'", print_stack(stack, registers_set).c_str());
-
-      while (true) {
-        instruction_t instruction = *reinterpret_cast<const instruction_t*>(text.data() + (*registers_set)[reg_index("RI")]);
-        exec_cmd0(text, stack, registers_set, instruction);
-
-        DEBUG_LOGGER_EXEC("instruction: '%s'", print_instruction(instruction).c_str());
-        DEBUG_LOGGER_EXEC("stack frame: '%s'", print_stack(stack, registers_set).c_str());
-
-        (*registers_set)[reg_index("RI")] += sizeof(instruction_t);
-      }
     }
   }
 #endif
@@ -1086,7 +978,7 @@ struct interpreter_t {
     DEBUG_LOGGER_LA("tokens: \n%s", lexical_analyzer_n::show_tokens(tokens).c_str());
 
     auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(tokens);
-    DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_tree.show().c_str());
+    DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_tree.show({}).c_str());
 
     auto program_stmt = syntax_analyzer_n::process(syntax_lisp_tree);
     DEBUG_LOGGER_SA("syntax_tree: \n%s", program_stmt->show({}).c_str());
