@@ -164,7 +164,11 @@ namespace aml_n {
           [](const std::string& lexeme) { return value_t{}; },
         }, {
           type_t::whitespace,
-          std::regex(R"(\s+|;[^\n]*)"),
+          std::regex(R"([ \t]+)"),
+          [](const std::string& lexeme) { return value_t{}; },
+        }, {
+          type_t::whitespace,
+          std::regex(R"(;[^\n]*)"),
           [](const std::string& lexeme) { return value_t{}; },
         }, {
           type_t::lp,
@@ -1007,7 +1011,7 @@ int main(int argc, char* argv[]) {
     code = argv[1];
   }
 
-  // std::cout << code << std::endl;
+  // std::cout << "code: '\n" << code << "'" << std::endl;
 
   interpreter_t interpreter;
   interpreter.exec(code);
