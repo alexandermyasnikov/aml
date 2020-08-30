@@ -73,6 +73,18 @@
           (var b))))
     (var c)))
 
+; (block
+;   (let
+;     (a (int 1))
+;     (b (int 2))
+;     (c (int 0)))
+;   (set!
+;     (var c)
+;     (call sum a b))
+;   (call print (var a))
+;   (call print (var b))
+;   (call print (var c)))
+
 (func test_1
   (block
     (set a (block (set aa (var a)) (int 1)))
