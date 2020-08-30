@@ -419,10 +419,11 @@ namespace aml_n {
     }
 
     struct var_info_t {
-      size_t id  = {};
+      size_t      id = {};
+      std::string name;
 
       std::string show() const {
-        return std::to_string(id);
+        return std::to_string(id) + "\t'" + name + "'";
       }
     };
 
@@ -432,47 +433,66 @@ namespace aml_n {
     struct env_t : std::enable_shared_from_this<env_t> {
       using key_t = std::string;
       using val_t = var_info_t;
+      using vars_t = std::deque<var_info_t>;
 
-      std::map<key_t,  val_t>   vars_global;
-      std::map<size_t, val_t>   vars_local;
       env_sptr_t                parent;
-      static inline size_t      id;
+      static inline size_t      id = {};
+      vars_t                    funcs;
+      vars_t                    vars;
 
       env_t(env_sptr_t parent = nullptr) : parent(parent) { }
 
-      val_t& def_var(const key_t& key) {
-        auto it = vars_global.find(key);
-        if (it != vars_global.end())
+      val_t& def(const key_t& key, vars_t env_t::* pvars) {
+        auto it = std::find_if((this->*pvars).begin(), (this->*pvars).end(), [&key](const auto& var) { return key == var.name; });
+        if (it != (this->*pvars).end())
           throw fatal_error_t("env_t: '" + key + "' is exists");
-        auto& val = vars_global[key];
-        val.id = id++;
-        return val;
+
+        (this->*pvars).push_back({});
+        (this->*pvars).back().id = id++;
+        (this->*pvars).back().name = key;
+        return (this->*pvars).back();
       }
 
-      const val_t& get_var(const key_t& key) const {
+      const val_t& get(const key_t& key, vars_t env_t::* pvars) const {
         auto env = this->shared_from_this();
         while (env) {
-          auto &vars_global = env->vars_global;
-          auto it = vars_global.find(key);
-          if (it != vars_global.end()) {
-            return it->second;
+          auto it = std::find_if((*env.*pvars).begin(), (*env.*pvars).end(),
+              [&key](const auto& var) { return key == var.name; });
+          if (it != (*env.*pvars).end()) {
+            return *it;
           }
           env = env->parent;
         }
         throw fatal_error_t("env_t: '" + key + "' is not exists");
       }
 
-      void save_vars() {
+      val_t& def_func(const key_t& key) {
+        return def(key, &env_t::funcs);
+      }
+
+      const val_t& get_func(const key_t& key) const {
+        return get(key, &env_t::funcs);
+      }
+
+      val_t& def_var(const key_t& key) {
+        return def(key, &env_t::vars);
+      }
+
+      const val_t& get_var(const key_t& key) const {
+        return get(key, &env_t::vars);
+      }
+
+      void save_funcs() {
         if (!parent)
           return;
 
-        for (const auto& [_, val] : vars_local) {
-          parent->vars_local[val.id] = val;
+        for (const auto& func : funcs) {
+          parent->funcs.push_back(func);
         }
+      }
 
-        for (const auto& [_, val] : vars_global) {
-          parent->vars_local[val.id] = val;
-        }
+      void save_vars() {
+        // TODO
       }
 
       std::string show() const {
@@ -480,15 +500,14 @@ namespace aml_n {
         auto env = this->shared_from_this();
         size_t deep = {};
         while (env) {
-          auto &vars_global = env->vars_global;
-          for (const auto& [key, val] : vars_global) {
-            str += "\n; vars_global:" + indent(deep) + "'" + key + "' : " + val.show();
+          for (const auto& func : env->funcs) {
+            str += "; func: " + indent(deep) + func.show() + "\n";
+          }
+          for (const auto& var : env->vars) {
+            str += "; var:  " + indent(deep) + var.show() + "\n";
           }
           env = env->parent;
           deep++;
-        }
-        for (const auto& [_, val] : vars_local) {
-          str += "\n; vars_local: '" + val.show() + "'";
         }
         return str;
       }
@@ -753,9 +772,8 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_var);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      auto name = std::get<std::string>(tree.nodes[1].node.value);
-      auto& var_info = env->get_var(name);
-      id = var_info.id;
+      const auto& name = std::get<std::string>(tree.nodes[1].node.value);
+      id = env->def_var(name).id;
     }
 
     std::string stmt_defvar_t::show(size_t deep) const {
@@ -802,9 +820,8 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_func);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      auto name = std::get<std::string>(tree.nodes[1].node.value);
-      auto& var_info = env->get_var(name);
-      id = var_info.id;
+      const auto& name = std::get<std::string>(tree.nodes[1].node.value);
+      id = env->get_func(name).id;
     }
 
     std::string stmt_func_t::show(size_t deep) const {
@@ -875,12 +892,14 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_defn);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      auto name = std::get<std::string>(tree.nodes[1].node.value);
-      auto& var_info = env->def_var(name);
-      id = var_info.id;
-
       this->env = std::make_shared<env_t>(env);
+
+      const auto& name = std::get<std::string>(tree.nodes[1].node.value);
+      id = this->env->def_func(name).id;
+
       body = std::make_shared<stmt_expr_t>(tree.nodes[2], this->env);
+
+      this->env->save_funcs();
     }
 
     std::string stmt_defn_t::show(size_t deep) const {
@@ -893,8 +912,6 @@ namespace aml_n {
       str += indent(deep);
       str += body->show(deep + 1);
       str += token_t{.type = token_t::type_t::rp}.show();
-
-      // str += "\n" + env->show(); // TODO
       return str;
     }
 
@@ -931,9 +948,8 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_var);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      auto name = std::get<std::string>(tree.nodes[1].node.value);
-      auto& var_info = env->get_var(name);
-      id = var_info.id;
+      const auto& name = std::get<std::string>(tree.nodes[1].node.value);
+      id = env->get_var(name).id;
     }
 
     std::string stmt_var_t::show(size_t deep) const {
