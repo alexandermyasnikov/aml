@@ -37,7 +37,6 @@ namespace aml_n {
 
     static inline size_t column_start = 1;
     static inline size_t line_start = 1;
-    static inline std::string var_prefix = "var_";
 
     static std::string indent(size_t count) {
       static size_t tab_size = 2;
@@ -433,8 +432,8 @@ namespace aml_n {
 
     struct env_t : std::enable_shared_from_this<env_t> {
       using key_t = std::string;
-      using val_t = var_info_t;
-      using vars_t = std::deque<var_info_t>;
+      using val_t = std::shared_ptr<var_info_t>;
+      using vars_t = std::deque<val_t>;
 
       env_sptr_t                parent;
       static inline size_t      id = {};
@@ -443,23 +442,23 @@ namespace aml_n {
 
       env_t(env_sptr_t parent = nullptr) : parent(parent) { }
 
-      val_t& def(const auto& key, auto pvars) {
+      val_t def(const auto& key, auto pvars) {
         auto it = std::find_if((this->*pvars).begin(), (this->*pvars).end(),
-            [&key](const auto& var) { return key == var.name; });
+            [&key](auto var) { return key == var->name; });
         if (it != (this->*pvars).end())
           throw fatal_error_t("env_t: '" + key + "' is exists");
 
-        (this->*pvars).push_back({});
-        (this->*pvars).back().id = id++;
-        (this->*pvars).back().name = key;
+        (this->*pvars).push_back(std::make_shared<var_info_t>());
+        (this->*pvars).back()->id = id++;
+        (this->*pvars).back()->name = key;
         return (this->*pvars).back();
       }
 
-      const val_t& get(const auto& key, auto pvar, auto pvars) const {
+      val_t get(const auto& key, auto pvar, auto pvars) const {
         auto env = this->shared_from_this();
         while (env) {
           auto it = std::find_if((*env.*pvars).begin(), (*env.*pvars).end(),
-              [&key, pvar](const auto& var) { return key == var.*pvar; });
+              [&key, pvar](auto var) { return key == (*var).*pvar; });
           if (it != (*env.*pvars).end()) {
             return *it;
           }
@@ -475,26 +474,27 @@ namespace aml_n {
         throw fatal_error_t("env_t: '" + key_str + "' is not exists");
       }
 
-      val_t& def_func(const key_t& key) {
+      val_t def_func(const key_t& key) {
         return def(key, &env_t::funcs);
       }
 
-      const val_t& get_func(const key_t& key) const {
+      val_t get_func(const key_t& key) const {
         return get(key, &var_info_t::name, &env_t::funcs);
       }
 
-      const val_t& get_func(size_t key) const {
+      val_t get_func(size_t key) const {
         return get(key, &var_info_t::id, &env_t::funcs);
       }
 
-      val_t& def_var(const key_t& key) {
+      val_t def_var(const key_t& key) {
         return def(key, &env_t::vars);
       }
 
-      const val_t& get_var(const key_t& key) const {
+      val_t get_var(const key_t& key) const {
         return get(key, &var_info_t::name, &env_t::vars);
       }
 
+#if 0
       void save_funcs() {
         if (!parent)
           return;
@@ -507,6 +507,7 @@ namespace aml_n {
       void save_vars() {
         // TODO
       }
+#endif
 
       std::string show() const {
         std::string str;
@@ -514,10 +515,10 @@ namespace aml_n {
         size_t deep = {};
         while (env) {
           for (const auto& func : env->funcs) {
-            str += "; func: " + indent(deep) + func.show() + "\n";
+            str += "; func: " + indent(deep) + func->show() + "\n";
           }
           for (const auto& var : env->vars) {
-            str += "; var:  " + indent(deep) + var.show() + "\n";
+            str += "; var:  " + indent(deep) + var->show() + "\n";
           }
           env = env->parent;
           deep++;
@@ -601,7 +602,7 @@ namespace aml_n {
     };
 
     struct stmt_defn_t : stmt_t {
-      size_t id = {};
+      std::shared_ptr<var_info_t>  var;
       std::shared_ptr<stmt_expr_t> body;
       std::shared_ptr<env_t>       env;
 
@@ -610,7 +611,7 @@ namespace aml_n {
     };
 
     struct stmt_defvar_t : stmt_t {
-      size_t id = {};
+      std::shared_ptr<var_info_t>  var;
       std::shared_ptr<stmt_expr_t> body;
       std::shared_ptr<env_t>       env;
 
@@ -637,7 +638,7 @@ namespace aml_n {
     };
 
     struct stmt_func_t : stmt_t {
-      size_t id = {};
+      std::shared_ptr<var_info_t>  var;
       std::shared_ptr<env_t>       env;
 
       stmt_func_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
@@ -668,7 +669,7 @@ namespace aml_n {
     };
 
     struct stmt_var_t : stmt_t {
-      size_t id = {};
+      std::shared_ptr<var_info_t> var;
 
       stmt_var_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
@@ -686,6 +687,7 @@ namespace aml_n {
       for (const auto& node : tree.nodes) {
         funcs.push_back(std::make_shared<stmt_defn_t>(node, env));
       }
+      DEBUG_LOGGER_SA("env: \n%s", env->show().c_str());
     }
 
     std::string stmt_program_t::show(size_t deep) const {
@@ -732,7 +734,7 @@ namespace aml_n {
         exprs.push_back(std::make_shared<stmt_expr_t>(node, env_block));
       }
 
-      env_block->save_vars();
+      // env_block->save_vars();
     }
 
     std::string stmt_block_t::show(size_t deep) const {
@@ -785,8 +787,9 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_var);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      const auto& name = std::get<std::string>(tree.nodes[1].node.value);
-      id = env->def_var(name).id;
+      var = env->def_var(std::get<std::string>(tree.nodes[1].node.value));
+      body = std::make_shared<stmt_expr_t>(tree.nodes[2], env);
+      // env TODO
     }
 
     std::string stmt_defvar_t::show(size_t deep) const {
@@ -794,7 +797,7 @@ namespace aml_n {
       str += token_t{.type = token_t::type_t::lp}.show();
       str += token_t{.type = token_t::type_t::key_var}.show();
       str += token_t{.type = token_t::type_t::whitespace}.show();
-      str += var_prefix + std::to_string(id);
+      str += var->name;
       str += token_t{.type = token_t::type_t::rp}.show();
       return str;
     }
@@ -833,8 +836,7 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_func);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      const auto& name = std::get<std::string>(tree.nodes[1].node.value);
-      id = env->get_func(name).id;
+      var = env->get_func(std::get<std::string>(tree.nodes[1].node.value));
     }
 
     std::string stmt_func_t::show(size_t deep) const {
@@ -842,7 +844,7 @@ namespace aml_n {
       str += token_t{.type = token_t::type_t::lp}.show();
       str += token_t{.type = token_t::type_t::key_func}.show();
       str += token_t{.type = token_t::type_t::whitespace}.show();
-      str += var_prefix + std::to_string(id);
+      str += var->name;
       str += token_t{.type = token_t::type_t::rp}.show();
       return str;
     }
@@ -905,16 +907,10 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_defn);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      this->env = std::make_shared<env_t>(env);
-
-      const auto& name = std::get<std::string>(tree.nodes[1].node.value);
-      id = this->env->def_func(name).id;
-
-      body = std::make_shared<stmt_expr_t>(tree.nodes[2], this->env);
-
-      this->env->save_funcs();
-
-      DEBUG_LOGGER_SA("env: \n%s", this->env->show().c_str());
+      this->env = env;
+      var = env->def_func(std::get<std::string>(tree.nodes[1].node.value));
+      body = std::make_shared<stmt_expr_t>(tree.nodes[2], env);
+      // DEBUG_LOGGER_SA("env: \n%s", this->env->show().c_str());
     }
 
     std::string stmt_defn_t::show(size_t deep) const {
@@ -922,11 +918,7 @@ namespace aml_n {
       str += token_t{.type = token_t::type_t::lp}.show();
       str += token_t{.type = token_t::type_t::key_func}.show();
       str += token_t{.type = token_t::type_t::whitespace}.show();
-#if 1
-      str += env->get_func(id).name + ":" + std::to_string(id);
-#else
-      str += var_prefix + std::to_string(id);
-#endif
+      str += var->name;
       str += token_t{.type = token_t::type_t::new_line}.show();
       str += indent(deep);
       str += body->show(deep + 1);
@@ -967,8 +959,7 @@ namespace aml_n {
       check_type(tree.nodes[0], token_t::type_t::key_var);
       check_type(tree.nodes[1], token_t::type_t::ident);
 
-      const auto& name = std::get<std::string>(tree.nodes[1].node.value);
-      id = env->get_var(name).id;
+      var = env->def_var(std::get<std::string>(tree.nodes[1].node.value));
     }
 
     std::string stmt_var_t::show(size_t deep) const {
@@ -976,7 +967,7 @@ namespace aml_n {
       str += token_t{.type = token_t::type_t::lp}.show();
       str += token_t{.type = token_t::type_t::key_var}.show();
       str += token_t{.type = token_t::type_t::whitespace}.show();
-      str += var_prefix + std::to_string(id);
+      str += var->name;
       str += token_t{.type = token_t::type_t::rp}.show();
       return str;
     }
