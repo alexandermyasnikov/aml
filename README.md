@@ -7,7 +7,7 @@ mailto:myasnikov.alexander.s@gmail.com
 
 git:https://gitlab.com/amyasnikov/aml
 
-Version: 0.1
+Version: 0.3
 
 
 
@@ -59,6 +59,7 @@ Version: 0.1
            30    31    32 33 34 35 36  37    38 39 40 41  42 43   44
 
 | rbp | stack                                                               | rip | code        |
+|-----|---------------------------------------------------------------------|-----|-------------|
 | 0   |                                                                     | 10  | PUSH <main> |
 | 0   | <main>                                                              | 11  | PUSH 0      |
 | 0   | <main> 0                                                            | 12  | CALL        | + rbp:rip
@@ -74,7 +75,7 @@ Version: 0.1
 | 10  | <main> 0 rbp:0 rip:13 <sum> <sum> 12 11 10 3 rbp:2 rip:37 11 10     | 22  | PUSH 1      |
 | 10  | <main> 0 rbp:0 rip:13 <sum> <sum> 12 11 10 3 rbp:2 rip:37 11 10 1   | 23  | PUSH 3      |
 | 10  | <main> 0 rbp:0 rip:13 <sum> <sum> 12 11 10 3 rbp:2 rip:37 11 10 1 3 | 24  | SYSCALL     |
-| 2   | <main> 0 rbp:0 rip:13 <sum> <sum> 12 11 10 3 rbp:2 rip:37 21        | 25  | ret         |
+| 2   | <main> 0 rbp:0 rip:13 <sum> <sum> 12 11 10 3 rbp:2 rip:37 21        | 25  | RET         |
 | 2   | <main> 0 rbp:0 rip:13 <sum> 21                                      | 37  | PUSH <sum>  |
 | 2   | <main> 0 rbp:0 rip:13 <sum> 21 <sum>                                | 38  | PUSH 21     |
 | 2   | <main> 0 rbp:0 rip:13 <sum> 21 <sum> 21                             | 39  | PUSH 20     |
@@ -85,7 +86,7 @@ Version: 0.1
 | 15  | <main> 0 rbp:0 rip:13 <sum> 21 <sum> 21 20 2 rbp:2 rip:42 21 20     | 22  | PUSH 1      |
 | 15  | <main> 0 rbp:0 rip:13 <sum> 21 <sum> 21 20 2 rbp:2 rip:42 21 20 1   | 23  | PUSH 3      |
 | 15  | <main> 0 rbp:0 rip:13 <sum> 21 <sum> 21 20 2 rbp:2 rip:42 21 20 1 3 | 24  | SYSCALL     |
-| 15  | <main> 0 rbp:0 rip:13 <sum> 21 <sum> 21 20 2 rbp:2 rip:42 41        | 25  | ret         |
+| 15  | <main> 0 rbp:0 rip:13 <sum> 21 <sum> 21 20 2 rbp:2 rip:42 41        | 25  | RET         |
 | 2   | <main> 0 rbp:0 rip:13 <sum> 21 41                                   | 42  | PUSH 2      |
 | 2   | <main> 0 rbp:0 rip:13 <sum> 21 41 2                                 | 43  | CALL        |
 | 8   | <main> 0 rbp:0 rip:13 <sum> 21 41 2 rbp:2 rip:44                    | 20  | PUSH $2     |
@@ -93,9 +94,9 @@ Version: 0.1
 | 8   | <main> 0 rbp:0 rip:13 <sum> 21 41 2 rbp:2 rip:44 21 41              | 22  | PUSH 1      |
 | 8   | <main> 0 rbp:0 rip:13 <sum> 21 41 2 rbp:2 rip:44 21 41 1            | 23  | PUSH 3      |
 | 8   | <main> 0 rbp:0 rip:13 <sum> 21 41 2 rbp:2 rip:44 21 41 1 3          | 24  | SYSCALL     |
-| 8   | <main> 0 rbp:0 rip:13 <sum> 21 41 2 rbp:2 rip:44 62                 | 25  | ret         |
-| 2   | <main> 0 rbp:0 rip:13 62                                            | 13  | ret         |
-| 0   | 62                                                                  | 14  | exit        |
+| 8   | <main> 0 rbp:0 rip:13 <sum> 21 41 2 rbp:2 rip:44 62                 | 25  | RET         |
+| 2   | <main> 0 rbp:0 rip:13 62                                            | 13  | RET         |
+| 0   | 62                                                                  | 14  | EXIT        |
 ```
 
 

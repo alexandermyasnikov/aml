@@ -6,108 +6,83 @@
 
 
 
-(func add
-  (call ; (syscall
-    (int 1)
-    (arg 1)
-    (arg 2)))
-
-(func greater
-  (call ; (syscall
-    (int 2)
-    (arg 1)
-    (arg 2)))
-
-(func mult
-  (call ; (syscall
-    (int 3)
-    (arg 1)
-    (arg 2)))
-
-(func sub
-  (call ; (syscall
-    (int 4)
-    (arg 1)
-    (arg 2)))
-
-(func print
-  (call ; (syscall
-    (int 5)
-    (arg 1)))
-
-
-
-(func product
-  (if
-    (call
-      (var greater)
-      (arg 1)
-      (int 1))
-    (call
-      (var mult)
-      (arg 1)
-      (call
-        (var product)
-        (call
-          (var sub)
-          (arg 1)
-          (int 1))))
-    (int 1)))
-
-(func perimeter
-  (block
-    (set a
-      (arg 1))
-    (set b
-      (arg 2))
-    (set c
-      (call
-        (var add)
-        (call
-          (var add)
-          (var a)
-          (var a))
-        (call
-          (var add)
-          (var b)
-          (var b))))
-    (var c)))
+; (func product
+;   (if
+;     (call
+;       (var greater)
+;       (arg 1)
+;       (int 1))
+;     (call
+;       (var mult)
+;       (arg 1)
+;       (call
+;         (var product)
+;         (call
+;           (var sub)
+;           (arg 1)
+;           (int 1))))
+;     (int 1)))
 
 ; (block
-;   (let
-;     (a (int 1))
-;     (b (int 2))
-;     (c (int 0)))
-;   (set!
-;     (var c)
-;     (call sum a b))
+;   (defvar a (int 1))
+;   (defvar b (int 2))
+;   (defvar c (call sum a b))
 ;   (call print (var a))
 ;   (call print (var b))
 ;   (call print (var c)))
 
-(func test_1
-  (block
-    (set a (block (set aa (var a)) (int 1)))
-    (set b (block (set aa (var a)) (int 1)))
-    (set c (block (set aa (var c)) (int 1)))
-    (set aa (var a))
-    (set bb (var bb))
-    (int 1)))
+; (func test_1
+;   (block
+;     (set a (block (set aa (var a)) (int 1)))
+;     (set b (block (set aa (var a)) (int 1)))
+;     (set c (block (set aa (var c)) (int 1)))
+;     (set aa (var a))
+;     (set bb (var bb))
+;     (int 1)))
 
-(func main
-  (block
-    (set a
-      (int 10))
-    (set b
-      (int 3))
-    (set p
-      (call
-        (var perimeter)
-        (var a)
-        (var b)))
+; (func main
+;   (block
+;     (set a
+;       (int 10))
+;     (set b
+;       (int 3))
+;     (set p
+;       (call
+;         (var perimeter)
+;         (var a)
+;         (var b)))
+;     (call
+;       (var print)
+;       (var p))))
+
+(defn sum
+  (syscall
+    (int 1)
+    (arg 1)
+    (arg 2)
+    (arg 3)))
+
+(defn mult
+  (syscall
+    (arg 1)
+    (syscall (arg 1) (arg 1) (arg 1))
+    (arg 2)))
+
+(defn main
+  (call
+    (func mult)
     (call
-      (var print)
-      (var p))))
+      (func sum)
+      (int 10)
+      (int 11)
+      (int 12))
+    (call
+      (func sum)
+      (int 20)
+      (int 21))))
+
+(call
+  (func main))
 
 
 
