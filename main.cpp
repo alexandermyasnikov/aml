@@ -9,10 +9,10 @@
 #define DEBUG_LOGGER_TRACE_LA            // DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_LA(...)             // DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
-#define DEBUG_LOGGER_TRACE_SA            DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_SA(...)             DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_TRACE_SA            // DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_SA(...)             // DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
-#define DEBUG_LOGGER_TRACE_ICG           DEBUG_LOGGER("icg  ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_TRACE_ICG           // DEBUG_LOGGER("icg  ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_ICG(...)            DEBUG_LOG("icg  ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_CG            DEBUG_LOGGER("cg   ", logger_indent_aml_t::indent)
@@ -380,7 +380,7 @@ namespace aml_n {
     using namespace syntax_lisp_analyzer_n;
 
     // GRAMMAR
-    // program: func+
+    // program: func+   expr
     // expr:    ARG     <digit>
     // expr:    BLOCK   expr+
     // expr:    CALL    expr    expr*
@@ -553,7 +553,9 @@ namespace aml_n {
 
     enum class instruction_rpn_t : uint8_t {
       unknown,
+      arg,
       call,
+      exit,
       push8,
       ret,
       syscall,
@@ -601,9 +603,12 @@ namespace aml_n {
         std::string str;
         size_t pos = {};
         while (pos < buffer.size()) {
+          str += std::to_string(pos) + "\t\t";
           auto cmd = static_cast<instruction_rpn_t>(read_u8(pos));
           switch (cmd) {
+            case instruction_rpn_t::arg:     str += "arg "   + std::to_string(read_i64(pos));   break;
             case instruction_rpn_t::call:    str += "call";    break;
+            case instruction_rpn_t::exit:    str += "exit";    break;
             case instruction_rpn_t::push8:   str += "push8 " + std::to_string(read_i64(pos));   break;
             case instruction_rpn_t::ret:     str += "ret";     break;
             case instruction_rpn_t::syscall: str += "syscall"; break;
@@ -613,6 +618,13 @@ namespace aml_n {
         }
         return str;
       }
+    };
+
+    struct code_ctx_t {
+      code_t  code;
+      // size_t  rip = {};
+      // int64_t rbp = {};
+      int64_t rsp = {};
     };
 
     struct stmt_program_t;
@@ -631,18 +643,20 @@ namespace aml_n {
     struct stmt_t {
       virtual ~stmt_t() { }
       virtual std::string show(size_t deep) const = 0;
-      virtual void intermediate_code(code_t& code) const = 0;
+      virtual void intermediate_code(code_ctx_t& code_ctx) const = 0;
     };
 
     struct stmt_program_t : stmt_t {
       using funcs_t = std::deque<std::shared_ptr<stmt_defn_t>>;
+      using body_t  = std::shared_ptr<stmt_expr_t>;
 
       env_sptr_t env;
       funcs_t    funcs;
+      body_t     body;
 
       stmt_program_t(const syntax_lisp_tree_t& tree);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_arg_t : stmt_t {
@@ -650,7 +664,7 @@ namespace aml_n {
 
       stmt_arg_t(const syntax_lisp_tree_t& tree);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_block_t : stmt_t {
@@ -658,7 +672,7 @@ namespace aml_n {
 
       stmt_block_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_call_t : stmt_t {
@@ -667,7 +681,7 @@ namespace aml_n {
 
       stmt_call_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_defn_t : stmt_t {
@@ -677,7 +691,7 @@ namespace aml_n {
 
       stmt_defn_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_defvar_t : stmt_t {
@@ -687,7 +701,7 @@ namespace aml_n {
 
       stmt_defvar_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_expr_t : stmt_t {
@@ -706,7 +720,7 @@ namespace aml_n {
 
       stmt_expr_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_func_t : stmt_t {
@@ -715,7 +729,7 @@ namespace aml_n {
 
       stmt_func_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_if_t : stmt_t {
@@ -725,7 +739,7 @@ namespace aml_n {
 
       stmt_if_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_int_t : stmt_t {
@@ -733,7 +747,7 @@ namespace aml_n {
 
       stmt_int_t(const syntax_lisp_tree_t& tree);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_syscall_t : stmt_t {
@@ -741,7 +755,7 @@ namespace aml_n {
 
       stmt_syscall_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     struct stmt_var_t : stmt_t {
@@ -749,7 +763,7 @@ namespace aml_n {
 
       stmt_var_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
-      void intermediate_code(code_t& code) const override;
+      void intermediate_code(code_ctx_t& code_ctx) const override;
     };
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -758,12 +772,15 @@ namespace aml_n {
       DEBUG_LOGGER_TRACE_SA;
 
       check_not_leaf(tree);
+      check_size_gt(tree, 1);
 
       env = std::make_shared<env_t>();
 
-      for (const auto& node : tree.nodes) {
-        funcs.push_back(std::make_shared<stmt_defn_t>(node, env));
+      for (size_t i{}; i < tree.nodes.size() - 1; ++i) {
+        funcs.push_back(std::make_shared<stmt_defn_t>(tree.nodes[i], env));
       }
+      body = std::make_shared<stmt_expr_t>(tree.nodes.back(), env);
+
       DEBUG_LOGGER_SA("env: \n%s", env->show().c_str());
     }
 
@@ -774,14 +791,20 @@ namespace aml_n {
         str += token_t{.type = token_t::type_t::new_line}.show();
         str += token_t{.type = token_t::type_t::new_line}.show();
       }
+      str += body->show(deep + 1);
+      str += token_t{.type = token_t::type_t::new_line}.show();
+      str += token_t{.type = token_t::type_t::new_line}.show();
       return str;
     }
 
-    void stmt_program_t::intermediate_code(code_t& code) const {
+    void stmt_program_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
       for (const auto& func : funcs) {
-        func->intermediate_code(code);
+        func->intermediate_code(code_ctx);
       }
+      DEBUG_LOGGER_ICG("rip start: %d", code_ctx.code.buffer.size());
+      body->intermediate_code(code_ctx);
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::exit);
     }
 
     stmt_arg_t::stmt_arg_t(const syntax_lisp_tree_t& tree) {
@@ -805,10 +828,12 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_arg_t::intermediate_code(code_t& code) const {
+    void stmt_arg_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
-      code.write_u8((uint8_t) instruction_rpn_t::push8);
-      code.write_i64(-1); // TODO
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::arg);
+      code_ctx.code.write_i64(code_ctx.rsp + value); // TODO
+      code_ctx.rsp++;
+      // DEBUG_LOGGER_ICG("rsp arg: %d", code_ctx.rsp);
     }
 
     stmt_block_t::stmt_block_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
@@ -840,7 +865,7 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_block_t::intermediate_code(code_t& code) const {
+    void stmt_block_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
       throw fatal_error_t("TODO");
     }
@@ -874,15 +899,20 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_call_t::intermediate_code(code_t& code) const {
+    void stmt_call_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
-      name->intermediate_code(code);
+      name->intermediate_code(code_ctx);
+
       for (const auto& arg : args | std::views::reverse) {
-        arg->intermediate_code(code);
+        arg->intermediate_code(code_ctx);
       }
-      code.write_u8((uint8_t) instruction_rpn_t::push8);
-      code.write_i64(args.size());
-      code.write_u8((uint8_t) instruction_rpn_t::call);
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::push8);
+      code_ctx.code.write_i64(args.size() + 1);
+      code_ctx.rsp++;
+
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::call);
+      code_ctx.rsp -= 1/*<count>*/ + (args.size() + 1);
+      code_ctx.rsp += 1/*<return>*/;
     }
 
     stmt_defvar_t::stmt_defvar_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
@@ -908,7 +938,7 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_defvar_t::intermediate_code(code_t& code) const {
+    void stmt_defvar_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
       throw fatal_error_t("TODO");
     }
@@ -939,9 +969,9 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_expr_t::intermediate_code(code_t& code) const {
+    void stmt_expr_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
-      std::visit(overloaded{[&code] (const auto &expr) { expr->intermediate_code(code); } }, expr);
+      std::visit(overloaded{[&code_ctx] (const auto &expr) { expr->intermediate_code(code_ctx); } }, expr);
     }
 
     stmt_func_t::stmt_func_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
@@ -965,10 +995,11 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_func_t::intermediate_code(code_t& code) const {
+    void stmt_func_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
-      code.write_u8((uint8_t) instruction_rpn_t::push8);
-      code.write_i64(-1); // TODO
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::push8);
+      code_ctx.code.write_i64(var->offset);
+      code_ctx.rsp++;
     }
 
     stmt_if_t::stmt_if_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
@@ -1000,7 +1031,7 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_if_t::intermediate_code(code_t& code) const {
+    void stmt_if_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
       throw fatal_error_t("TODO");
     }
@@ -1026,10 +1057,11 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_int_t::intermediate_code(code_t& code) const {
+    void stmt_int_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
-      code.write_u8((uint8_t) instruction_rpn_t::push8);
-      code.write_i64(value);
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::push8);
+      code_ctx.code.write_i64(value);
+      code_ctx.rsp++;
     }
 
     stmt_defn_t::stmt_defn_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
@@ -1059,10 +1091,15 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_defn_t::intermediate_code(code_t& code) const {
+    void stmt_defn_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
-      body->intermediate_code(code);
-      code.write_u8((uint8_t) instruction_rpn_t::ret);
+      DEBUG_LOGGER_ICG("rsp1: %d", code_ctx.rsp);
+      var->offset = code_ctx.code.buffer.size();
+      DEBUG_LOGGER_ICG("name: %s \t %d", var->name.c_str(), var->offset);
+      body->intermediate_code(code_ctx);
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::ret);
+      DEBUG_LOGGER_ICG("rsp2: %d", code_ctx.rsp);
+      code_ctx.rsp = {};
     }
 
     stmt_syscall_t::stmt_syscall_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
@@ -1090,14 +1127,18 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_syscall_t::intermediate_code(code_t& code) const {
+    void stmt_syscall_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
       for (const auto& arg : args | std::views::reverse) {
-        arg->intermediate_code(code);
+        arg->intermediate_code(code_ctx);
       }
-      code.write_u8((uint8_t) instruction_rpn_t::push8);
-      code.write_i64(args.size());
-      code.write_u8((uint8_t) instruction_rpn_t::syscall);
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::push8);
+      code_ctx.code.write_i64(args.size());
+      code_ctx.rsp++;
+
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::syscall);
+      code_ctx.rsp -= 1/*<count>*/ + args.size();
+      code_ctx.rsp += 1/*<return>*/;
     }
 
     stmt_var_t::stmt_var_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
@@ -1121,7 +1162,7 @@ namespace aml_n {
       return str;
     }
 
-    void stmt_var_t::intermediate_code(code_t& code) const {
+    void stmt_var_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
       throw fatal_error_t("TODO");
     }
@@ -1147,9 +1188,9 @@ namespace aml_n {
     using namespace syntax_analyzer_n;
 
     code_t process(std::shared_ptr<stmt_t> stmt) {
-      code_t code;
-      stmt->intermediate_code(code);
-      return code;
+      code_ctx_t code_ctx;
+      stmt->intermediate_code(code_ctx);
+      return code_ctx.code;
     }
   }
 
