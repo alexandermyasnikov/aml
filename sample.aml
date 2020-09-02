@@ -55,34 +55,47 @@
 ;       (var print)
 ;       (var p))))
 
-(defn sum
+(defn +
   (syscall
     (int 1)
     (arg 1)
-    (arg 2)
-    (arg 3)))
-
-(defn mult
-  (syscall
-    (arg 1)
-    (syscall (arg 1) (arg 1) (arg 1))
     (arg 2)))
 
-(defn main
+(defn *
+  (syscall
+    (int 2)
+    (arg 1)
+    (arg 2)))
+
+(defn square
   (call
-    (func mult)
+    (func *)
+    (arg 1)
+    (arg 2)))
+
+(defn perimeter
+  (call
+    (func *)
+    (int 2)
     (call
-      (func sum)
-      (int 10)
-      (int 11)
-      (int 12))
-    (call
-      (func sum)
-      (int 20)
-      (int 21))))
+      (func +)
+      (arg 1)
+      (arg 2))))
+
+(defn test_1
+  (call
+    (func square)
+    (int 3)
+    (int 5)))
+
+(defn test_2
+  (call
+    (func perimeter)
+    (int 3)
+    (int 5)))
 
 (call
-  (func main))
+  (func test_2))
 
 
 

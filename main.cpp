@@ -13,13 +13,13 @@
 #define DEBUG_LOGGER_SA(...)             // DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_ICG           // DEBUG_LOGGER("icg  ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_ICG(...)            DEBUG_LOG("icg  ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_ICG(...)            // DEBUG_LOG("icg  ", logger_indent_aml_t::indent, __VA_ARGS__)
 
-#define DEBUG_LOGGER_TRACE_CG            DEBUG_LOGGER("cg   ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_CG(...)             DEBUG_LOG("cg   ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_TRACE_CG            // DEBUG_LOGGER("cg   ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_CG(...)             // DEBUG_LOG("cg   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
-#define DEBUG_LOGGER_TRACE_EXEC          DEBUG_LOGGER("exec ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_EXEC(...)           DEBUG_LOG("exec ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_TRACE_EXEC          // DEBUG_LOGGER("exec ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_EXEC(...)           // DEBUG_LOG("exec ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 template <typename T>
 struct logger_indent_t { static inline int indent = 0; };
@@ -494,21 +494,6 @@ namespace aml_n {
         return get(key, &var_info_t::name, &env_t::vars);
       }
 
-#if 0
-      void save_funcs() {
-        if (!parent)
-          return;
-
-        for (const auto& func : funcs) {
-          parent->funcs.push_back(func);
-        }
-      }
-
-      void save_vars() {
-        // TODO
-      }
-#endif
-
       std::string show() const {
         std::string str;
         auto env = this->shared_from_this();
@@ -526,30 +511,6 @@ namespace aml_n {
         return str;
       }
     };
-
-#if 0
-    struct symbols_t {
-      struct func_info_t {
-        std::string name;
-        std::deque<std::string> vars;
-      };
-
-      std::deque<func_info_t> funcs;
-
-      std::string show() {
-        std::string str;
-        for (size_t i{}; i < funcs.size(); ++i) {
-          const auto& func = funcs[i];
-          str += std::to_string(i) + ": \t" + func.name + "\n";
-          for (size_t i{}; i < func.vars.size(); ++i) {
-            const auto& var = func.vars[i];
-            str += "\t" + std::to_string(i) + ": \t" + var + "\n";
-          }
-        }
-        return str;
-      }
-    };
-#endif
 
     enum class instruction_rpn_t : uint8_t {
       unknown,
@@ -599,20 +560,43 @@ namespace aml_n {
         return ret;
       }
 
+      static size_t instruction_size(instruction_rpn_t cmd) {
+        switch (cmd) {
+          case instruction_rpn_t::arg:     return 8;
+          case instruction_rpn_t::call:    return 0;
+          case instruction_rpn_t::exit:    return 0;
+          case instruction_rpn_t::push8:   return 8;
+          case instruction_rpn_t::ret:     return 0;
+          case instruction_rpn_t::syscall: return 0;
+          default: return 0;
+        }
+      }
+
+      static std::string show_instruction(instruction_rpn_t cmd) {
+        std::string str;
+        switch (cmd) {
+          case instruction_rpn_t::arg:     str += "arg";     break;
+          case instruction_rpn_t::call:    str += "call";    break;
+          case instruction_rpn_t::exit:    str += "exit";    break;
+          case instruction_rpn_t::push8:   str += "push8";   break;
+          case instruction_rpn_t::ret:     str += "ret";     break;
+          case instruction_rpn_t::syscall: str += "syscall"; break;
+          default: str += "(unknown)";
+        }
+        return str;
+      }
+
       std::string show() const {
         std::string str;
-        size_t pos = {};
-        while (pos < buffer.size()) {
-          str += std::to_string(pos) + "\t\t";
-          auto cmd = static_cast<instruction_rpn_t>(read_u8(pos));
-          switch (cmd) {
-            case instruction_rpn_t::arg:     str += "arg "   + std::to_string(read_i64(pos));   break;
-            case instruction_rpn_t::call:    str += "call";    break;
-            case instruction_rpn_t::exit:    str += "exit";    break;
-            case instruction_rpn_t::push8:   str += "push8 " + std::to_string(read_i64(pos));   break;
-            case instruction_rpn_t::ret:     str += "ret";     break;
-            case instruction_rpn_t::syscall: str += "syscall"; break;
-            default: str += "(unknown)";
+        size_t rip = {};
+        while (rip < buffer.size()) {
+          str += std::to_string(rip) + "\t\t";
+          auto cmd = static_cast<instruction_rpn_t>(read_u8(rip));
+          str += show_instruction(cmd);
+          switch (instruction_size(cmd)) {
+            case 8: str += " " + std::to_string(read_i64(rip)); break;
+            case 0: break;
+            default: str += " (unknown)";
           }
           str += "\n";
         }
@@ -622,8 +606,7 @@ namespace aml_n {
 
     struct code_ctx_t {
       code_t  code;
-      // size_t  rip = {};
-      // int64_t rbp = {};
+      size_t  rip = {};
       int64_t rsp = {};
     };
 
@@ -802,7 +785,8 @@ namespace aml_n {
       for (const auto& func : funcs) {
         func->intermediate_code(code_ctx);
       }
-      DEBUG_LOGGER_ICG("rip start: %d", code_ctx.code.buffer.size());
+      code_ctx.rip = code_ctx.code.buffer.size();
+      DEBUG_LOGGER_ICG("rip start: %d", code_ctx.rip);
       body->intermediate_code(code_ctx);
       code_ctx.code.write_u8((uint8_t) instruction_rpn_t::exit);
     }
@@ -831,9 +815,8 @@ namespace aml_n {
     void stmt_arg_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
       code_ctx.code.write_u8((uint8_t) instruction_rpn_t::arg);
-      code_ctx.code.write_i64(code_ctx.rsp + value); // TODO
+      code_ctx.code.write_i64(code_ctx.rsp + value + 1/*rbp*/ + 1/*rip*/ + 1);
       code_ctx.rsp++;
-      // DEBUG_LOGGER_ICG("rsp arg: %d", code_ctx.rsp);
     }
 
     stmt_block_t::stmt_block_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
@@ -1093,12 +1076,9 @@ namespace aml_n {
 
     void stmt_defn_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
-      DEBUG_LOGGER_ICG("rsp1: %d", code_ctx.rsp);
       var->offset = code_ctx.code.buffer.size();
-      DEBUG_LOGGER_ICG("name: %s \t %d", var->name.c_str(), var->offset);
       body->intermediate_code(code_ctx);
       code_ctx.code.write_u8((uint8_t) instruction_rpn_t::ret);
-      DEBUG_LOGGER_ICG("rsp2: %d", code_ctx.rsp);
       code_ctx.rsp = {};
     }
 
@@ -1139,6 +1119,7 @@ namespace aml_n {
       code_ctx.code.write_u8((uint8_t) instruction_rpn_t::syscall);
       code_ctx.rsp -= 1/*<count>*/ + args.size();
       code_ctx.rsp += 1/*<return>*/;
+      code_ctx.rsp += 1/*<rbp>*/ + 1/*<rip>*/;
     }
 
     stmt_var_t::stmt_var_t(const syntax_lisp_tree_t& tree, env_sptr_t env) {
@@ -1187,10 +1168,10 @@ namespace aml_n {
     using namespace utils_n;
     using namespace syntax_analyzer_n;
 
-    code_t process(std::shared_ptr<stmt_t> stmt) {
+    code_ctx_t process(std::shared_ptr<stmt_t> stmt) {
       code_ctx_t code_ctx;
       stmt->intermediate_code(code_ctx);
-      return code_ctx.code;
+      return code_ctx;
     }
   }
 
@@ -1220,19 +1201,172 @@ namespace aml_n {
 
 
 
-#if 0
   namespace executor_n {
 
     using namespace intermediate_code_generator_n;
 
-    void process(const data_t& text, const functions_t& functions) {
+    struct machine_t {
+      std::deque<int64_t> stack;
+      int64_t rbp = {};
+      size_t rip = {};
+
+      std::string show() {
+        std::string str;
+        str += "size: " + std::to_string(stack.size()) + "\t";
+        str += "rbp: " + std::to_string(rbp) + "\t";
+        str += "rip: " + std::to_string(rip) + "\t";
+        str += "stack: ";
+        for (const auto& v : stack) {
+          str += std::to_string(v) + " ";
+        }
+        return str;
+      }
+    };
+
+    bool step(machine_t& machine, const code_t& code) {
+      auto cmd = static_cast<instruction_rpn_t>(code.read_u8(machine.rip));
+      DEBUG_LOGGER_EXEC("\tcmd: %s", code_t::show_instruction(cmd).c_str());
+      DEBUG_LOGGER_EXEC("\t%s", machine.show().c_str());
+
+      switch (cmd) {
+        case instruction_rpn_t::exit: {
+          return false;
+
+        } case instruction_rpn_t::arg: {
+          int64_t value = code.read_i64(machine.rip);
+          DEBUG_LOGGER_EXEC("value: %d", value);
+          machine.stack.push_back(machine.stack.at(machine.stack.size() - value));
+          DEBUG_LOGGER_EXEC("arg: %d", machine.stack.back());
+          break;
+
+        } case instruction_rpn_t::call: {
+          if (machine.stack.empty())
+            throw fatal_error_t("invalid stack");
+
+          int64_t arg_count = machine.stack.back();
+          DEBUG_LOGGER_EXEC("arg_count: %d", arg_count);
+          if (arg_count < 1 || arg_count > machine.stack.size())
+            throw fatal_error_t("invalid stack");
+
+          for (size_t i{}; i < arg_count - 1; ++i) {
+            int64_t arg = machine.stack.at(machine.stack.size() - 1 - 1/*arg_count*/ - i);
+            DEBUG_LOGGER_EXEC("arg: %d", arg);
+          }
+
+          int64_t rip = machine.stack.at(machine.stack.size() - 1 - arg_count);
+          DEBUG_LOGGER_EXEC("rip: %d", rip);
+
+          machine.stack.push_back(machine.rbp);
+          machine.stack.push_back(machine.rip);
+          machine.rbp = machine.stack.size() - 1/*rbp*/ - 1/*rip*/;
+          machine.rip = rip;
+          break;
+
+        } case instruction_rpn_t::push8: {
+          int64_t value = code.read_i64(machine.rip);
+          machine.stack.push_back(value);
+          break;
+
+        } case instruction_rpn_t::ret: {
+          if (machine.stack.size() < 4)
+            throw fatal_error_t("invalid stack");
+
+          int64_t ret = machine.stack.back();
+          machine.stack.pop_back();
+
+          machine.rip = machine.stack.back();
+          machine.stack.pop_back();
+
+          machine.rbp = machine.stack.back();
+          machine.stack.pop_back();
+
+          int64_t arg_count = machine.stack.back();
+          machine.stack.pop_back();
+
+          if (machine.stack.size() < arg_count)
+            throw fatal_error_t("invalid stack");
+
+          for (size_t i{}; i < arg_count; ++i) {
+            machine.stack.pop_back();
+          }
+
+          machine.stack.push_back(ret);
+          break;
+
+        } case instruction_rpn_t::syscall: {
+          if (machine.stack.empty())
+            throw fatal_error_t("invalid stack");
+
+          int64_t arg_count = machine.stack.back();
+          machine.stack.pop_back();
+          DEBUG_LOGGER_EXEC("arg_count: %d", arg_count);
+          if (arg_count > machine.stack.size())
+            throw fatal_error_t("invalid stack");
+
+          int64_t ret = -1;
+          int64_t op  = -1;
+          if (arg_count > 0) {
+            op = machine.stack.back();
+            machine.stack.pop_back();
+            arg_count--;
+
+            if (op == 1 && arg_count == 2) {
+              int64_t opnd1 = machine.stack.back();
+              machine.stack.pop_back();
+              arg_count--;
+              int64_t opnd2 = machine.stack.back();
+              machine.stack.pop_back();
+              arg_count--;
+
+              ret = opnd1 + opnd2;
+              DEBUG_LOGGER_EXEC("+ %d %d = %d", opnd1, opnd2, ret);
+
+            } else if (op == 2 && arg_count == 2) {
+              int64_t opnd1 = machine.stack.back();
+              machine.stack.pop_back();
+              arg_count--;
+              int64_t opnd2 = machine.stack.back();
+              machine.stack.pop_back();
+              arg_count--;
+
+              ret = opnd1 * opnd2;
+              DEBUG_LOGGER_EXEC("* %d %d = %d", opnd1, opnd2, ret);
+            }
+          }
+
+          if (arg_count) {
+            DEBUG_LOGGER_EXEC("invalid syscall: %d : %d", op, arg_count);
+            for (size_t i{}; i < arg_count; ++i) {
+              int64_t arg = machine.stack.back();
+              machine.stack.pop_back();
+              DEBUG_LOGGER_EXEC("arg: %d", arg);
+            }
+          }
+
+          machine.stack.push_back(ret);
+          break;
+
+        } default: throw fatal_error_t("unknown cmd");
+      }
+      return true;
+    }
+
+    void process(const code_ctx_t& code_ctx) {
       DEBUG_LOGGER_TRACE_EXEC;
 
-      if (functions.find("__start") == functions.end())
-        throw fatal_error_t("__start not exists");
+      machine_t machine;
+      machine.rip = code_ctx.rip;
+      machine.rbp = {};
+
+      while (step(machine, code_ctx.code)) {
+        ;
+      }
+
+      if (machine.stack.size() == 1) {
+        std::cout << machine.stack.front() << std::endl;
+      }
     }
   }
-#endif
 }
 
 
@@ -1250,13 +1384,13 @@ struct interpreter_t {
     auto stmt = syntax_analyzer_n::process(syntax_lisp_tree);
     DEBUG_LOGGER_SA("syntax_tree: \n%s", stmt->show({}).c_str());
 
-    auto intermediate_code = intermediate_code_generator_n::process(stmt);
-    DEBUG_LOGGER_ICG("code: \n%s", intermediate_code.show().c_str());
+    auto code_ctx = intermediate_code_generator_n::process(stmt);
+    DEBUG_LOGGER_ICG("intermediate_code: \n%s", code_ctx.code.show().c_str());
 
     // utils_n::data_t text;
     // code_generator_n::process(text, instructions);
 
-    // executor_n::process(text, functions);
+    executor_n::process(code_ctx);
   }
 };
 
