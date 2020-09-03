@@ -1031,27 +1031,22 @@ namespace aml_n {
     void stmt_if_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
 
-      DEBUG_LOGGER_ICG("rsp1: %d", code_ctx.rsp);
       expr_if->intermediate_code(code_ctx);
 
       code_ctx.code.write_u8((uint8_t) instruction_rpn_t::pop_jif);
       code_ctx.rsp--;
       size_t m1 = code_ctx.code.buffer.size();
       code_ctx.code.write_i64(-1);
-      DEBUG_LOGGER_ICG("M1: %d", m1);
 
-      DEBUG_LOGGER_ICG("rsp2: %d", code_ctx.rsp);
       expr_then->intermediate_code(code_ctx);
 
       code_ctx.code.write_u8((uint8_t) instruction_rpn_t::jmp);
       code_ctx.rsp--;
       size_t m2 = code_ctx.code.buffer.size();
       code_ctx.code.write_i64(-1);
-      DEBUG_LOGGER_ICG("M2: %d", m2);
 
       code_ctx.code.write_i64(code_ctx.code.buffer.size(), m1);
 
-      DEBUG_LOGGER_ICG("rsp3: %d", code_ctx.rsp);
       expr_else->intermediate_code(code_ctx);
 
       code_ctx.code.write_i64(code_ctx.code.buffer.size(), m2);
