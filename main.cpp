@@ -10,16 +10,16 @@
 #define DEBUG_LOGGER_LA(...)             // DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_SA            // DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_SA(...)             // DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_SA(...)             DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_ICG           // DEBUG_LOGGER("icg  ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_ICG(...)            // DEBUG_LOG("icg  ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_ICG(...)            DEBUG_LOG("icg  ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_CG            // DEBUG_LOGGER("cg   ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_CG(...)             // DEBUG_LOG("cg   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
-#define DEBUG_LOGGER_TRACE_EXEC          // DEBUG_LOGGER("exec ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_EXEC(...)           // DEBUG_LOG("exec ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_TRACE_EXEC          DEBUG_LOGGER("exec ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_EXEC(...)           DEBUG_LOG("exec ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 template <typename T>
 struct logger_indent_t { static inline int indent = 0; };
@@ -128,11 +128,13 @@ namespace aml_n {
           case type_t::key_int:     return "int";
           case type_t::key_syscall: return "syscall";
           case type_t::key_var:     return "var";
-          case type_t::integer:
-            { const auto* p = std::get_if<int64_t>(&value);     return p ? std::to_string(*p) : "<integer>"; }
-          case type_t::ident:
-            { const auto* p = std::get_if<std::string>(&value); return p ? *p : "<ident>"; }
-          case type_t::eof:         return "\0";
+          case type_t::integer: {
+            const auto* p = std::get_if<int64_t>(&value);
+            return p ? std::to_string(*p) : "<integer>";
+          } case type_t::ident: {
+            const auto* p = std::get_if<std::string>(&value);
+            return p ? *p : "<ident>";
+          } case type_t::eof:         return "\0";
           default:                  return "(unknown)";
         }
 #endif
@@ -517,6 +519,8 @@ namespace aml_n {
       arg,
       call,
       exit,
+      jmp,
+      pop_jif,
       push8,
       ret,
       syscall,
@@ -525,9 +529,17 @@ namespace aml_n {
     struct code_t {
       std::deque<uint8_t> buffer;
 
-      void write(const void* data, size_t size) {
-        for (size_t i{}; i < size; ++i) {
-          buffer.push_back(static_cast<const uint8_t*>(data)[i]);
+      void write(const void* data, size_t size, size_t pos = std::string::npos) {
+        if (pos == std::string::npos) {
+          for (size_t i{}; i < size; ++i) {
+            buffer.push_back(static_cast<const uint8_t*>(data)[i]);
+          }
+        } else if (pos + size < buffer.size()) {
+          for (size_t i{}; i < size; ++i) {
+            buffer[pos + i] = static_cast<const uint8_t*>(data)[i];
+          }
+        } else {
+          throw fatal_error_t("invalid pos");
         }
       }
 
@@ -535,11 +547,11 @@ namespace aml_n {
         write(&data, sizeof(data));
       }
 
-      void write_i64(uint64_t data) {
-        write(&data, sizeof(data));
+      void write_i64(uint64_t data, size_t pos = std::string::npos) {
+        write(&data, sizeof(data), pos);
       }
 
-      void read(size_t& pos, void* data, size_t size) const {
+      void read(void* data, size_t size, size_t& pos) const {
         if (pos + size > buffer.size())
           throw fatal_error_t("invalid pos");
         for (size_t i{}; i < size; ++i) {
@@ -550,13 +562,13 @@ namespace aml_n {
 
       uint8_t read_u8(size_t& pos) const {
         uint8_t ret;
-        read(pos, &ret, sizeof(ret));
+        read(&ret, sizeof(ret), pos);
         return ret;
       }
 
       int64_t read_i64(size_t& pos) const {
         int64_t ret;
-        read(pos, &ret, sizeof(ret));
+        read(&ret, sizeof(ret), pos);
         return ret;
       }
 
@@ -565,6 +577,8 @@ namespace aml_n {
           case instruction_rpn_t::arg:     return 8;
           case instruction_rpn_t::call:    return 0;
           case instruction_rpn_t::exit:    return 0;
+          case instruction_rpn_t::jmp:     return 8;
+          case instruction_rpn_t::pop_jif: return 8;
           case instruction_rpn_t::push8:   return 8;
           case instruction_rpn_t::ret:     return 0;
           case instruction_rpn_t::syscall: return 0;
@@ -578,6 +592,8 @@ namespace aml_n {
           case instruction_rpn_t::arg:     str += "arg";     break;
           case instruction_rpn_t::call:    str += "call";    break;
           case instruction_rpn_t::exit:    str += "exit";    break;
+          case instruction_rpn_t::jmp:     str += "jmp";     break;
+          case instruction_rpn_t::pop_jif: str += "pop_jif"; break;
           case instruction_rpn_t::push8:   str += "push8";   break;
           case instruction_rpn_t::ret:     str += "ret";     break;
           case instruction_rpn_t::syscall: str += "syscall"; break;
@@ -716,9 +732,9 @@ namespace aml_n {
     };
 
     struct stmt_if_t : stmt_t {
-      std::shared_ptr<stmt_expr_t> stmt_expr_if;
-      std::shared_ptr<stmt_expr_t> stmt_expr_then;
-      std::shared_ptr<stmt_expr_t> stmt_expr_else;
+      std::shared_ptr<stmt_expr_t> expr_if;
+      std::shared_ptr<stmt_expr_t> expr_then;
+      std::shared_ptr<stmt_expr_t> expr_else;
 
       stmt_if_t(const syntax_lisp_tree_t& tree, env_sptr_t env);
       std::string show(size_t deep) const override;
@@ -831,8 +847,6 @@ namespace aml_n {
       for (const auto& node : tree.nodes) {
         exprs.push_back(std::make_shared<stmt_expr_t>(node, env_block));
       }
-
-      // env_block->save_vars();
     }
 
     std::string stmt_block_t::show(size_t deep) const {
@@ -992,9 +1006,9 @@ namespace aml_n {
       check_size_eq(tree, 4);
       check_type(tree.nodes[0], token_t::type_t::key_if);
 
-      stmt_expr_if   = std::make_shared<stmt_expr_t>(tree.nodes[1], env);
-      stmt_expr_then = std::make_shared<stmt_expr_t>(tree.nodes[2], env);
-      stmt_expr_else = std::make_shared<stmt_expr_t>(tree.nodes[3], env);
+      expr_if   = std::make_shared<stmt_expr_t>(tree.nodes[1], env);
+      expr_then = std::make_shared<stmt_expr_t>(tree.nodes[2], env);
+      expr_else = std::make_shared<stmt_expr_t>(tree.nodes[3], env);
     }
 
     std::string stmt_if_t::show(size_t deep) const {
@@ -1003,20 +1017,44 @@ namespace aml_n {
       str += token_t{.type = token_t::type_t::key_if}.show();
       str += token_t{.type = token_t::type_t::new_line}.show();
       str += indent(deep);
-      str += stmt_expr_if->show(deep + 1);
+      str += expr_if->show(deep + 1);
       str += token_t{.type = token_t::type_t::new_line}.show();
       str += indent(deep);
-      str += stmt_expr_then->show(deep + 1);
+      str += expr_then->show(deep + 1);
       str += token_t{.type = token_t::type_t::new_line}.show();
       str += indent(deep);
-      str += stmt_expr_else->show(deep + 1);
+      str += expr_else->show(deep + 1);
       str += token_t{.type = token_t::type_t::rp}.show();
       return str;
     }
 
     void stmt_if_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
-      throw fatal_error_t("TODO");
+
+      DEBUG_LOGGER_ICG("rsp1: %d", code_ctx.rsp);
+      expr_if->intermediate_code(code_ctx);
+
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::pop_jif);
+      code_ctx.rsp--;
+      size_t m1 = code_ctx.code.buffer.size();
+      code_ctx.code.write_i64(-1);
+      DEBUG_LOGGER_ICG("M1: %d", m1);
+
+      DEBUG_LOGGER_ICG("rsp2: %d", code_ctx.rsp);
+      expr_then->intermediate_code(code_ctx);
+
+      code_ctx.code.write_u8((uint8_t) instruction_rpn_t::jmp);
+      code_ctx.rsp--;
+      size_t m2 = code_ctx.code.buffer.size();
+      code_ctx.code.write_i64(-1);
+      DEBUG_LOGGER_ICG("M2: %d", m2);
+
+      code_ctx.code.write_i64(code_ctx.code.buffer.size(), m1);
+
+      DEBUG_LOGGER_ICG("rsp3: %d", code_ctx.rsp);
+      expr_else->intermediate_code(code_ctx);
+
+      code_ctx.code.write_i64(code_ctx.code.buffer.size(), m2);
     }
 
     stmt_int_t::stmt_int_t(const syntax_lisp_tree_t& tree) {
@@ -1064,7 +1102,7 @@ namespace aml_n {
     std::string stmt_defn_t::show(size_t deep) const {
       std::string str;
       str += token_t{.type = token_t::type_t::lp}.show();
-      str += token_t{.type = token_t::type_t::key_func}.show();
+      str += token_t{.type = token_t::type_t::key_defn}.show();
       str += token_t{.type = token_t::type_t::whitespace}.show();
       str += var->name;
       str += token_t{.type = token_t::type_t::new_line}.show();
@@ -1077,6 +1115,7 @@ namespace aml_n {
     void stmt_defn_t::intermediate_code(code_ctx_t& code_ctx) const {
       DEBUG_LOGGER_TRACE_ICG;
       var->offset = code_ctx.code.buffer.size();
+      DEBUG_LOGGER_ICG("name: %s \t %d", var->name.c_str(), var->offset);
       body->intermediate_code(code_ctx);
       code_ctx.code.write_u8((uint8_t) instruction_rpn_t::ret);
       code_ctx.rsp = {};
@@ -1089,8 +1128,8 @@ namespace aml_n {
       check_size_gt(tree, 2);
       check_type(tree.nodes[0], token_t::type_t::key_syscall);
 
-      for (size_t i = 1; i < tree.nodes.size(); ++i) {
-        args.push_back(std::make_shared<stmt_expr_t>(tree.nodes[i], env));
+      for (const auto& node : tree.nodes | std::views::drop(1)) {
+        args.push_back(std::make_shared<stmt_expr_t>(node, env));
       }
     }
 
@@ -1224,9 +1263,12 @@ namespace aml_n {
     };
 
     bool step(machine_t& machine, const code_t& code) {
+      DEBUG_LOGGER_EXEC("\t%s", machine.show().c_str());
       auto cmd = static_cast<instruction_rpn_t>(code.read_u8(machine.rip));
       DEBUG_LOGGER_EXEC("\tcmd: %s", code_t::show_instruction(cmd).c_str());
-      DEBUG_LOGGER_EXEC("\t%s", machine.show().c_str());
+
+      if (machine.stack.size() > 1000)
+        throw fatal_error_t("too big stack");
 
       switch (cmd) {
         case instruction_rpn_t::exit: {
@@ -1262,9 +1304,34 @@ namespace aml_n {
           machine.rip = rip;
           break;
 
+         } case instruction_rpn_t::jmp: {
+          int64_t rip = code.read_i64(machine.rip);
+          DEBUG_LOGGER_EXEC("rip: %d", rip);
+          machine.rip = rip;
+          break;
+
+        } case instruction_rpn_t::pop_jif: {
+          if (machine.stack.empty())
+            throw fatal_error_t("invalid stack");
+
+          int64_t ret = machine.stack.back();
+          machine.stack.pop_back();
+          DEBUG_LOGGER_EXEC("ret: %d", ret);
+
+          int64_t rip = code.read_i64(machine.rip);
+          DEBUG_LOGGER_EXEC("rip: %d", rip);
+
+          if (!ret) {
+            machine.rip = rip;
+            DEBUG_LOGGER_EXEC("rip: %d", rip);
+          }
+
+          break;
+
         } case instruction_rpn_t::push8: {
           int64_t value = code.read_i64(machine.rip);
           machine.stack.push_back(value);
+          DEBUG_LOGGER_EXEC("value: %d", value);
           break;
 
         } case instruction_rpn_t::ret: {
@@ -1303,6 +1370,9 @@ namespace aml_n {
           if (arg_count > machine.stack.size())
             throw fatal_error_t("invalid stack");
 
+
+
+
           int64_t ret = -1;
           int64_t op  = -1;
           if (arg_count > 0) {
@@ -1310,7 +1380,25 @@ namespace aml_n {
             machine.stack.pop_back();
             arg_count--;
 
-            if (op == 1 && arg_count == 2) {
+            static std::vector<std::function<int64_t(int64_t, int64_t)>> ops2 = {
+              /*200*/ [](int64_t a, int64_t b) { return a + b; },
+              /*201*/ [](int64_t a, int64_t b) { return a - b; },
+              /*202*/ [](int64_t a, int64_t b) { return a * b; },
+              /*203*/ [](int64_t a, int64_t b) { return !b ? 0 : a / b; },
+              /*204*/ [](int64_t a, int64_t b) { return a == b; },
+              /*205*/ [](int64_t a, int64_t b) { return a < b; },
+              /*206*/ [](int64_t a, int64_t b) { return a && b; },
+              /*207*/ [](int64_t a, int64_t b) { return a || b; },
+            };
+
+            if (arg_count == 1 && op == 100) {
+              int64_t opnd1 = machine.stack.back();
+              machine.stack.pop_back();
+              arg_count--;
+              ret = !opnd1;
+              DEBUG_LOGGER_EXEC("%d: %d => %d", op, opnd1, ret);
+
+            } else if (arg_count == 2 && op >= 200 && op < 200 + ops2.size()) {
               int64_t opnd1 = machine.stack.back();
               machine.stack.pop_back();
               arg_count--;
@@ -1318,19 +1406,8 @@ namespace aml_n {
               machine.stack.pop_back();
               arg_count--;
 
-              ret = opnd1 + opnd2;
-              DEBUG_LOGGER_EXEC("+ %d %d = %d", opnd1, opnd2, ret);
-
-            } else if (op == 2 && arg_count == 2) {
-              int64_t opnd1 = machine.stack.back();
-              machine.stack.pop_back();
-              arg_count--;
-              int64_t opnd2 = machine.stack.back();
-              machine.stack.pop_back();
-              arg_count--;
-
-              ret = opnd1 * opnd2;
-              DEBUG_LOGGER_EXEC("* %d %d = %d", opnd1, opnd2, ret);
+              ret = ops2[op - 200](opnd1, opnd2);
+              DEBUG_LOGGER_EXEC("%d: %d %d => %d", op, opnd1, opnd2, ret);
             }
           }
 
@@ -1359,7 +1436,6 @@ namespace aml_n {
       machine.rbp = {};
 
       while (step(machine, code_ctx.code)) {
-        ;
       }
 
       if (machine.stack.size() == 1) {

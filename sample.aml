@@ -2,70 +2,94 @@
 ;  Author: Alexander Myasnikov
 ;  mailto:myasnikov.alexander.s@gmail.com
 ;  git:https://gitlab.com/amyasnikov/aml
-;  version: 0.1
+;  version: 0.5
 
 
 
-; (func product
-;   (if
-;     (call
-;       (var greater)
-;       (arg 1)
-;       (int 1))
-;     (call
-;       (var mult)
-;       (arg 1)
-;       (call
-;         (var product)
-;         (call
-;           (var sub)
-;           (arg 1)
-;           (int 1))))
-;     (int 1)))
+; SYSCALL
 
-; (block
-;   (defvar a (int 1))
-;   (defvar b (int 2))
-;   (defvar c (call sum a b))
-;   (call print (var a))
-;   (call print (var b))
-;   (call print (var c)))
-
-; (func test_1
-;   (block
-;     (set a (block (set aa (var a)) (int 1)))
-;     (set b (block (set aa (var a)) (int 1)))
-;     (set c (block (set aa (var c)) (int 1)))
-;     (set aa (var a))
-;     (set bb (var bb))
-;     (int 1)))
-
-; (func main
-;   (block
-;     (set a
-;       (int 10))
-;     (set b
-;       (int 3))
-;     (set p
-;       (call
-;         (var perimeter)
-;         (var a)
-;         (var b)))
-;     (call
-;       (var print)
-;       (var p))))
+(defn !
+  (syscall
+    (int 100)
+    (arg 1)))
 
 (defn +
   (syscall
-    (int 1)
+    (int 200)
+    (arg 1)
+    (arg 2)))
+
+(defn -
+  (syscall
+    (int 201)
     (arg 1)
     (arg 2)))
 
 (defn *
   (syscall
-    (int 2)
+    (int 202)
     (arg 1)
     (arg 2)))
+
+(defn /
+  (syscall
+    (int 203)
+    (arg 1)
+    (arg 2)))
+
+(defn ==
+  (syscall
+    (int 204)
+    (arg 1)
+    (arg 2)))
+
+(defn <
+  (syscall
+    (int 205)
+    (arg 1)
+    (arg 2)))
+
+(defn &&
+  (syscall
+    (int 206)
+    (arg 1)
+    (arg 2)))
+
+(defn ||
+  (syscall
+    (int 207)
+    (arg 1)
+    (arg 2)))
+
+
+
+; STD
+
+(defn !=
+  (call
+    (func !)
+    (call
+      (func ==)
+      (arg 1)
+      (arg 2))))
+
+(defn >
+  (call
+    (func !)
+    (call
+      (func ||)
+      (call
+        (func <)
+        (arg 1)
+        (arg 2))
+      (call
+        (func ==)
+        (arg 1)
+        (arg 2)))))
+
+
+
+; SAMPLE
 
 (defn square
   (call
@@ -82,6 +106,23 @@
       (arg 1)
       (arg 2))))
 
+(defn product
+  (if
+    (call
+      (func >)
+      (arg 1)
+      (int 1))
+    (call
+      (func *)
+      (arg 1)
+      (call
+        (func product)
+        (call
+          (func -)
+          (arg 1)
+          (int 1))))
+    (int 1)))
+
 (defn test_1
   (call
     (func square)
@@ -94,8 +135,24 @@
     (int 3)
     (int 5)))
 
+(defn test_3
+  (call
+    (func product)
+    (int 5)))
+
+(defn test_4
+  (if
+    (int 1)
+    (arg 1)
+    (arg 1)))
+
 (call
-  (func test_2))
+  (func test_3)
+  (int 101)
+  (int 102)
+  (int 103)
+  (int 104)
+  (int 105))
 
 
 
