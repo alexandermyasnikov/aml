@@ -2,12 +2,10 @@
 # AML
 
 Author: Alexander Myasnikov
+mailto: myasnikov.alexander.s@gmail.com
+git: https://gitlab.com/amyasnikov/aml
 
-mailto:myasnikov.alexander.s@gmail.com
-
-git:https://gitlab.com/amyasnikov/aml
-
-Version: 0.3
+Version: 0.4
 
 
 
@@ -17,22 +15,222 @@ Version: 0.3
 
 
 
-### Архитектура:
+### Общие сведения:
 
-* Процедуры работают только с аргументами, локальными даннами и глобальными функциями.
-* Данные в code  выровнены по u8.
-* Данные в stack выровнены по u64.
-* // Данные в regs  выровнены по u64.
-
-
-
-### TODO:
-
-* Добавить макросы как в assembler.
+* AML - стековый язык.
+* Данные в code  выровнены по границе uint8_t.
+* Данные в stack выровнены по uint64_t.
 
 
 
-### Пример кода: // TODO
+### Грамматика
+
+* program: func+   expr
+* expr:    ARG     <digit>
+* expr:    BLOCK   expr+
+* expr:    CALL    expr    expr*
+* expr:    DEFVAR  <name>  expr
+* expr:    IF      expr    expr expr
+* expr:    INT     <digit>
+* expr:    SYSCALL expr+
+* expr:    VAR     <name>
+* func:    DEFN    expr    expr
+
+
+
+### Ограничения:
+
+* Тип данных - только int64_t.
+* Отсутствуют проверки типов на этапе компиляции.
+
+
+
+### Пример кода:
+
+Смотри sample.aml
+
+
+
+
+### Стадия 1. Лексический анализатор
+
+Для простоты разборы используется lisp синтаксис.
+
+Исходный текст разбивается на следующие токены:
+
+* whitespace
+* lp
+* rp
+* key_arg
+* key_block
+* key_call
+* key_defn
+* key_defvar
+* key_func
+* key_if
+* key_int
+* key_syscall
+* key_var
+* integer
+* ident
+
+
+
+### Стадия 2.a. Синтаксический анализатор (LISP)
+
+Из списка токенов строится дерево в соответствии с грамматикой:
+* lisp_tree: node
+* node: LP node* RP | key | integer | ident
+
+Эта стадия добавлена для упрощения разбора
+
+
+
+### Стадия 2.b. Синтаксический анализатор
+
+Из lisp_tree строится stmt в соответствии с грамматикой:
+
+```
+stmt:    program
+program: func+   expr
+expr:    ARG     <digit>
+expr:    BLOCK   expr+
+expr:    CALL    expr    expr*
+expr:    DEFVAR  <name>  expr
+expr:    IF      expr    expr expr
+expr:    INT     <digit>
+expr:    SYSCALL expr+
+expr:    VAR     <name>
+func:    DEFN    expr    expr
+```
+
+
+
+### Стадия 3 Семантический анализатор
+
+* Добавить проверку типов. // TODO
+
+
+
+### Стадия 4 Генерация промежуточного кода
+
+Дерево stmt переводится в ПОЛИЗ.
+
+Инструкции ПОЛИЗ:
+* arg
+* call
+* exit
+* jmp
+* pop_jif
+* push8
+* ret
+* syscall
+
+Правила перевода stmt в ПОЛИЗ:
+
+```
+(arg <digit>) ->
+    arg
+
+(block expr1 expr2 ... exprN) ->
+    TODO
+
+(call expr_name expr1 expr2 ... exprN) ->
+    CODE(expr_name)
+    CODE(exprN)
+    ...
+    CODE(expr2)
+    CODE(expr1)
+    push8 N
+    call
+
+(defvar <name>) ->
+    TODO
+
+(func <name>) ->
+    push8 <offset>
+
+(if expr_if expr_then expr_else) ->
+    CODE(expr_if)
+    pop_jif <M1>
+    CODE(expr_then)
+    jmp <M2>
+M1: CODE(expr_else)
+M2:
+
+(int <digit>) ->
+    push8 <digit>
+
+(defn <name> expr_body) ->
+    CODE(expr_body)
+    ret
+
+(syscall expr1 expr2 ... exprN) ->
+    CODE(exprN)
+    ...
+    CODE(expr2)
+    CODE(expr1)
+    push8 N
+    syscall
+
+(var <name>) ->
+    push8 <offset>
+```
+
+
+
+
+### Стадия 5 Оптимизация кода
+
+// TODO
+
+
+
+### Стадия 6 Генерация кода
+
+Перевод ПОЛИЗ выражения в тетрады или триады. // TODO
+
+
+
+### Выполнение кода
+
+Для выполнения нужен созданный бинарный код, содержащий ПОЛИЗ команды и указатель на стартовое выражение.
+
+Выполнение команд осуществляется на стеке в соответствии с правилами:
+
+```
+exit -> завершение выполнения
+
+arg <offset>:
+  stack: ... -> ... MEMORY[offset]
+
+call:
+  stack: ... <argN> ... <arg2> <arg1> <N> -> <argN> ... <arg2> <arg1> <N> <rpb> <rip>
+  rip = argN
+  rbp = stack.size
+
+jmp <label>:
+  rip = <label>
+
+pop_jif <label>:
+  stack: ... res -> ...
+  rip = res ? <label> : rip
+
+push8 <digit>:
+  stack: ... -> ... <digit>
+
+ret:
+  stack: <argN> ... <arg2> <arg1> <N> <rbp_old> <rbp_old> <ret> -> ... <ret>
+  rip = rip_old
+  rbp = rbp_old
+
+syscall:
+  stack: <argN> ... <arg2> <arg1> <N> -> <ret>
+```
+
+
+
+### Пример генерации кода
 
 ```
 (deffunc sum
@@ -51,7 +249,7 @@ Version: 0.3
       (INT 20)
       (INT 21))))
 
-(call main) -> 0 <main> CALL
+(call main)
 
 10:        <main> 0 CALL ret exit
 20:<sum>:  $2 $1 1 3 syscall ret
@@ -98,61 +296,3 @@ Version: 0.3
 | 2   | <main> 0 rbp:0 rip:13 62                                            | 13  | RET         |
 | 0   | 62                                                                  | 14  | EXIT        |
 ```
-
-
-### GENERATION
-
-```
-REGS:
-  rip
-  rbp
-  rsp
-
-(call <name> <expr1> <expr2> ... <exprN>) ->
-  PUSH <name>
-  GEN expr1
-  GEN expr2
-  ...
-  GEN exprN
-  PUSH <N>
-  CALL
-
-(int <digit>) ->
-  PUSH <digit>
-
-(arg <digit>) ->
-  XXX TODO
-
-(BLOCK a b c) ->
-  GEN a
-  GEN b
-  GEN c
-
-(SET name value) ->
-  LABEL name
-  PUSH 0
-  GEN value
-  OP_SAVE
-
-(FUNC name body) ->
-  ;
-
-(__add arg1 arg2) ->
-  PUSH arg1
-  OP_LOAD
-  PUSH arg2
-  OP_LOAD
-  OP_ADD
-
-
-{ <stack>           ; <code>         } -> { <stack>     }
-{                   ; PUSH1 b1:opnd1 } -> { opnd1       }
-{ b1:opnd1          ; POP1           } -> {             }
-{ b8:opnd1          ; LOAD           } -> { M[opnd1]    }
-{ b8:opnd1 b1:opnd2 ; SAVE           } -> {             }   M[opnd1] = opnd2
-{ b1:opnd2 b1:opnd2 ; ADD1           } -> { opnd1+opnd2 }
-
-```
-
-
-
