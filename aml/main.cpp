@@ -91,100 +91,20 @@ namespace aml_n {
         throw syntax_error_t(tree.node, type);
     }
 
-    struct var_info_t {
-      size_t      id = {};
-      std::string name;
-      size_t      offset = {};
 
-      std::string show() const {
-        return std::to_string(id) + "\t'" + name + "'\t" + std::to_string(offset);
-      }
-    };
 
-    struct env_t;
-    using env_sptr_t = std::shared_ptr<env_t>;
 
-    struct env_t : std::enable_shared_from_this<env_t> {
-      using key_t = std::string;
-      using val_t = std::shared_ptr<var_info_t>;
-      using vars_t = std::deque<val_t>;
 
-      env_sptr_t                parent;
-      static inline size_t      id = {};
-      vars_t                    funcs;
-      vars_t                    vars;
 
-      env_t(env_sptr_t parent = nullptr) : parent(parent) { }
 
-      val_t def(const auto& key, auto pvars) {
-        auto it = std::find_if((this->*pvars).begin(), (this->*pvars).end(),
-            [&key](auto var) { return key == var->name; });
-        if (it != (this->*pvars).end())
-          throw fatal_error_t("env_t: '" + key + "' is exists");
 
-        (this->*pvars).push_back(std::make_shared<var_info_t>());
-        (this->*pvars).back()->id = id++;
-        (this->*pvars).back()->name = key;
-        return (this->*pvars).back();
-      }
 
-      val_t get(const auto& key, auto pvar, auto pvars) const {
-        auto env = this->shared_from_this();
-        while (env) {
-          auto it = std::find_if((*env.*pvars).begin(), (*env.*pvars).end(),
-              [&key, pvar](auto var) { return key == (*var).*pvar; });
-          if (it != (*env.*pvars).end()) {
-            return *it;
-          }
-          env = env->parent;
-        }
 
-        std::string key_str;
-        if constexpr (std::is_arithmetic<decltype(key)>::value) {
-          key_str = std::to_string(key);
-        } else {
-          key_str = key;
-        }
-        throw fatal_error_t("env_t: '" + key_str + "' is not exists");
-      }
 
-      val_t def_func(const key_t& key) {
-        return def(key, &env_t::funcs);
-      }
 
-      val_t get_func(const key_t& key) const {
-        return get(key, &var_info_t::name, &env_t::funcs);
-      }
 
-      val_t get_func(size_t key) const {
-        return get(key, &var_info_t::id, &env_t::funcs);
-      }
 
-      val_t def_var(const key_t& key) {
-        return def(key, &env_t::vars);
-      }
 
-      val_t get_var(const key_t& key) const {
-        return get(key, &var_info_t::name, &env_t::vars);
-      }
-
-      std::string show() const {
-        std::string str;
-        auto env = this->shared_from_this();
-        size_t deep = {};
-        while (env) {
-          for (const auto& func : env->funcs) {
-            str += "; func: " + indent(deep) + func->show() + "\n";
-          }
-          for (const auto& var : env->vars) {
-            str += "; var:  " + indent(deep) + var->show() + "\n";
-          }
-          env = env->parent;
-          deep++;
-        }
-        return str;
-      }
-    };
 
     enum class instruction_rpn_t : uint8_t {
       unknown,
