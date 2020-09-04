@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <string>
@@ -11,6 +10,8 @@
 namespace aml::token_n {
   namespace utils_n = aml::utils_n;
 
+
+
   struct pos_t {
     size_t line   = utils_n::line_start;
     size_t column = utils_n::column_start;
@@ -18,6 +19,14 @@ namespace aml::token_n {
 
     std::string show() const;
   };
+
+
+
+  using value_t = std::variant<
+    int64_t,
+    std::string>;
+
+
 
   enum class type_t {
     unknown,
@@ -40,9 +49,7 @@ namespace aml::token_n {
     eof,
   };
 
-  using value_t = std::variant<
-    int64_t,
-    std::string>;
+
 
   struct token_t {
     type_t      type = type_t::unknown;
@@ -57,7 +64,7 @@ namespace aml::token_n {
 
   using tokens_t = std::deque<token_t>;
 
-  std::string show_tokens(const token_n::tokens_t& tokens);
+
 
   struct rule_t {
     using value_cb_t = std::function<value_t(const std::string&)>;
@@ -66,6 +73,8 @@ namespace aml::token_n {
     std::regex regex;
     value_cb_t get_value;
   };
+
+
 
   static inline std::vector<rule_t> rules = {
     {
@@ -138,4 +147,9 @@ namespace aml::token_n {
         [](const std::string& lexeme) { return lexeme; },
     },
   };
+
+
+
+  std::string show_tokens(const token_n::tokens_t& tokens);
+  tokens_t process(const std::string& code);
 }

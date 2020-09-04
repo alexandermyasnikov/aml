@@ -1,11 +1,11 @@
-
 #include <iostream>
 #include <variant>
 #include <iomanip>
 #include <regex>
 
-#include "token.h"
 #include "utils.h"
+#include "lisp_tree.h"
+#include "token.h"
 
 #include "debug_logger.h"
 
@@ -33,111 +33,17 @@ struct logger_indent_aml_t : logger_indent_t<logger_indent_aml_t> { };
 
 namespace aml_n {
 
-
-
-
   namespace lexical_analyzer_n {
-
-    using namespace aml::utils_n;
-
-    namespace token_n = aml::token_n;
-
-    token_n::tokens_t process(const std::string& code) {
-      token_n::tokens_t tokens;
-
-      auto it = code.begin();
-      auto ite = code.end();
-      token_n::token_t token;
-
-      while (token.next(it, ite)) {
-        DEBUG_LOGGER_LA("token: %zd \t '%s' \t '%s'", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
-        if (token.is_primary())
-          tokens.push_back(token);
-      }
-
-      if (token.type != token_n::type_t::eof) {
-        throw fatal_error_t("lexical_analyzer: expected eof at " + token.pos.show());
-      }
-
-      return tokens;
+    auto process(const std::string& code) {
+      return aml::token_n::process(code);
     }
   }
 
-
-
-#if 0
   namespace syntax_lisp_analyzer_n {
-
-    using namespace aml::utils_n;
-    using namespace lexical_analyzer_n;
-
-    struct syntax_lisp_tree_t {
-      using node_t  = token_t;
-      using nodes_t = std::deque<syntax_lisp_tree_t>;
-
-      node_t  node  = token_t{};
-      nodes_t nodes = {};
-
-      bool is_leaf() const {
-        return node.type != token_t::type_t::unknown
-          && node.type != token_t::type_t::lp
-          && node.type != token_t::type_t::rp;
-      }
-
-      std::string show(size_t deep) const {
-        std::string str;
-
-        if (is_leaf()) {
-          str += node.show();
-        } else {
-          str += node_t{.type = token_t::type_t::lp}.show();
-          for (size_t i{}; i < nodes.size(); ++i) {
-            const auto& node = nodes[i];
-            if (i) {
-              str += node_t{.type = token_t::type_t::new_line}.show();
-              str += indent(deep);
-            }
-            str += node.show(deep + 1);
-          }
-          str += node_t{.type = token_t::type_t::rp}.show();
-        }
-
-        return str;
-      }
-    };
-
-    syntax_lisp_tree_t process(const tokens_t& tokens) {
-      std::stack<syntax_lisp_tree_t> stack;
-      stack.push(syntax_lisp_tree_t{});
-      token_t token_last;
-      for (const auto& token : tokens) {
-        token_last = token;
-
-        if (token.type == token_t::type_t::lp) {
-          stack.push(syntax_lisp_tree_t{.node = token});
-
-        } else if (token.type == token_t::type_t::rp) {
-          if (stack.size() < 2)
-            throw fatal_error_t("syntax_lisp_analyzer: unexpected ')' at " + token.pos.show() + " " + token.lexeme);
-          auto top = stack.top();
-          stack.pop();
-          stack.top().nodes.push_back(top);
-
-        } else if (token.is_primary()) {
-          stack.top().nodes.push_back(syntax_lisp_tree_t{.node = token});
-
-        } else {
-          throw fatal_error_t("syntax_lisp_analyzer: expected primary token");
-        }
-      }
-
-      if (stack.size() != 1)
-        throw fatal_error_t("syntax_lisp_analyzer: parse error at " + token_last.pos.show() + " " + token_last.lexeme);
-
-      return stack.top();
+    auto process(const aml::token_n::tokens_t& tokens) {
+      return aml::lisp_tree_n::process(tokens);
     }
   }
-#endif
 
 
 
@@ -1206,7 +1112,6 @@ namespace aml_n {
   }
 #endif
 }
-
 
 struct interpreter_t {
 

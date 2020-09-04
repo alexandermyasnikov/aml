@@ -1,4 +1,3 @@
-
 #include "token.h"
 
 namespace aml::token_n {
@@ -112,5 +111,25 @@ namespace aml::token_n {
       str += token.show() + " ";
     }
     return str;
+  }
+
+  tokens_t process(const std::string& code) {
+    tokens_t tokens;
+
+    auto it = code.begin();
+    auto ite = code.end();
+    token_n::token_t token;
+
+    while (token.next(it, ite)) {
+      // DEBUG_LOGGER_LA("token: %zd \t '%s' \t '%s'", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
+      if (token.is_primary())
+        tokens.push_back(token);
+    }
+
+    if (token.type != token_n::type_t::eof) {
+      throw utils_n::fatal_error_t("token_t: expected eof at " + token.pos.show());
+    }
+
+    return tokens;
   }
 }
