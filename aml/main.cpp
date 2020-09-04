@@ -4,10 +4,13 @@
 #include <iomanip>
 #include <regex>
 
+#include "token.h"
+#include "utils.h"
+
 #include "debug_logger.h"
 
-#define DEBUG_LOGGER_TRACE_LA            // DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_LA(...)             // DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
+#define DEBUG_LOGGER_TRACE_LA            DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
+#define DEBUG_LOGGER_LA(...)             DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
 
 #define DEBUG_LOGGER_TRACE_SA            // DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
 #define DEBUG_LOGGER_SA(...)             DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
@@ -30,281 +33,42 @@ struct logger_indent_aml_t : logger_indent_t<logger_indent_aml_t> { };
 
 namespace aml_n {
 
-  namespace utils_n {
-
-    template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-    template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
-    static inline size_t column_start = 1;
-    static inline size_t line_start = 1;
-
-    static std::string indent(size_t count) {
-      static size_t tab_size = 2;
-      return std::string(count * tab_size, ' ');
-    }
-
-    struct fatal_error_t : std::runtime_error {
-      fatal_error_t(const std::string& msg = "unknown error") : std::runtime_error(msg) { }
-    };
-  }
 
 
 
   namespace lexical_analyzer_n {
 
-    using namespace utils_n;
+    using namespace aml::utils_n;
 
-    struct pos_t {
-      size_t line   = line_start;
-      size_t column = column_start;
-      size_t length = 0;
+    namespace token_n = aml::token_n;
 
-      std::string show() const {
-        return std::to_string(line)
-          + ":" + std::to_string(column)
-          + ":" + std::to_string(length);
-      }
-    };
-
-    struct token_t {
-      enum class type_t {
-        unknown,
-        new_line,
-        whitespace,
-        lp,
-        rp,
-        key_arg,
-        key_block,
-        key_call,
-        key_defn,
-        key_defvar,
-        key_func,
-        key_if,
-        key_int,
-        key_syscall,
-        key_var,
-        integer,
-        ident,
-        eof,
-      };
-
-      using value_t = std::variant<
-        int64_t,
-        std::string>;
-
-      type_t      type = type_t::unknown;
-      pos_t       pos  = { };
-      std::string lexeme;
-      value_t     value;
-
-      bool is_primary() const {
-        switch (type) {
-          case type_t::unknown:
-          case type_t::new_line:
-          case type_t::whitespace:
-          case type_t::eof:
-            return false;
-          default:
-            return true;
-        }
-      }
-
-      std::string show() const {
-#if 0
-        return lexeme;
-#else
-        switch (type) {
-          case type_t::new_line:    return "\n";
-          case type_t::whitespace:  return " ";
-          case type_t::lp:          return "(";
-          case type_t::rp:          return ")";
-          case type_t::key_arg:     return "arg";
-          case type_t::key_block:   return "block";
-          case type_t::key_call:    return "call";
-          case type_t::key_defn:    return "defn";
-          case type_t::key_defvar:  return "defvar";
-          case type_t::key_func:    return "func";
-          case type_t::key_if:      return "if";
-          case type_t::key_int:     return "int";
-          case type_t::key_syscall: return "syscall";
-          case type_t::key_var:     return "var";
-          case type_t::integer: {
-            const auto* p = std::get_if<int64_t>(&value);
-            return p ? std::to_string(*p) : "<integer>";
-          } case type_t::ident: {
-            const auto* p = std::get_if<std::string>(&value);
-            return p ? *p : "<ident>";
-          } case type_t::eof:         return "\0";
-          default:                  return "(unknown)";
-        }
-#endif
-      }
-
-      struct rule_t {
-        type_t        type;
-        std::regex    regex;
-        std::function<value_t(const std::string&)> get_value;
-      };
-
-      static inline std::vector<rule_t> rules = {
-        {
-          type_t::new_line,
-          std::regex(R"(\n)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::whitespace,
-          std::regex(R"([ \t]+)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::whitespace,
-          std::regex(R"(;[^\n]*)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::lp,
-          std::regex(R"(\()"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::rp,
-          std::regex(R"(\))"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_arg,
-          std::regex(R"(arg)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_block,
-          std::regex(R"(block)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_call,
-          std::regex(R"(call)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_defn,
-          std::regex(R"(defn)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_defvar,
-          std::regex(R"(defvar)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_func,
-          std::regex(R"(func)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_if,
-          std::regex(R"(if)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_int,
-          std::regex(R"(int)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_syscall,
-          std::regex(R"(syscall)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::key_var,
-          std::regex(R"(var)"),
-          [](const std::string& lexeme) { return value_t{}; },
-        }, {
-          type_t::integer,
-          std::regex(R"([-+]?\d+)"),
-          [](const std::string& lexeme) { return stol(lexeme); },
-        }, {
-          type_t::ident,
-          std::regex(R"([\w<=>&|+\-\!:*^\/]+)"),
-          [](const std::string& lexeme) { return lexeme; },
-        },
-      };
-
-      static bool next(auto& it, auto ite, token_t& token) {
-        if (it == ite) {
-          token.pos.column += token.pos.length;
-          token.pos.length  = 0;
-          token.lexeme      = "\0";
-          token.value       = {};
-          token.type        = type_t::eof;
-          return false;
-        }
-
-        std::smatch m;
-        std::regex_constants::match_flag_type flags =
-            std::regex_constants::match_continuous | std::regex_constants::match_not_null;
-
-        const rule_t* match_rule = nullptr;
-        std::smatch match_best;
-
-        for (const auto& rule : rules) {
-          if (!std::regex_search(it, ite, m, rule.regex, flags))
-            continue;
-
-          if (m.position())
-            throw fatal_error_t("lexical_analyzer: unknown position at " + token.pos.show());
-
-          if (m.length() > (!match_best.empty() ? match_best.length() : 0)) {
-            match_best = m;
-            match_rule = &rule;
-          }
-        }
-
-        if (!match_rule) {
-          return false;
-        }
-
-        it               += match_best.length();
-        token.pos.column += token.pos.length;
-        token.pos.length  = match_best.length();
-        token.lexeme      = match_best.str();
-        token.value       = match_rule->get_value(token.lexeme);
-        token.type        = match_rule->type;
-
-        if (match_rule->type == type_t::new_line) {
-          token.pos.line++;
-          token.pos.length = 0;
-          token.pos.column = column_start;
-        }
-
-        return true;
-      }
-    };
-
-    using tokens_t = std::deque<token_t>;
-
-    tokens_t process(const std::string& code) {
-      tokens_t tokens;
+    token_n::tokens_t process(const std::string& code) {
+      token_n::tokens_t tokens;
 
       auto it = code.begin();
       auto ite = code.end();
-      token_t token;
+      token_n::token_t token;
 
-      while (token_t::next(it, ite, token)) {
+      while (token.next(it, ite)) {
         DEBUG_LOGGER_LA("token: %zd \t '%s' \t '%s'", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
         if (token.is_primary())
           tokens.push_back(token);
       }
 
-      if (token.type != token_t::type_t::eof) {
+      if (token.type != token_n::type_t::eof) {
         throw fatal_error_t("lexical_analyzer: expected eof at " + token.pos.show());
       }
 
       return tokens;
     }
-
-    static std::string show_tokens(const tokens_t& tokens) {
-      std::string str;
-      for (const auto& token : tokens) {
-        str += token.show() + " ";
-      }
-      return str;
-    }
   }
 
 
 
+#if 0
   namespace syntax_lisp_analyzer_n {
 
-    using namespace utils_n;
+    using namespace aml::utils_n;
     using namespace lexical_analyzer_n;
 
     struct syntax_lisp_tree_t {
@@ -373,12 +137,14 @@ namespace aml_n {
       return stack.top();
     }
   }
+#endif
 
 
 
+#if 0
   namespace syntax_analyzer_n {
 
-    using namespace utils_n;
+    using namespace aml::utils_n;
     using namespace syntax_lisp_analyzer_n;
 
     // GRAMMAR
@@ -1191,7 +957,7 @@ namespace aml_n {
 
   namespace semantic_analyzer_n {
 
-    using namespace utils_n;
+    using namespace aml::utils_n;
     using namespace syntax_analyzer_n;
   }
 
@@ -1199,7 +965,7 @@ namespace aml_n {
 
   namespace intermediate_code_generator_n {
 
-    using namespace utils_n;
+    using namespace aml::utils_n;
     using namespace syntax_analyzer_n;
 
     code_ctx_t process(std::shared_ptr<stmt_t> stmt) {
@@ -1438,6 +1204,7 @@ namespace aml_n {
       }
     }
   }
+#endif
 }
 
 
@@ -1447,21 +1214,21 @@ struct interpreter_t {
     using namespace aml_n;
 
     auto tokens = lexical_analyzer_n::process(code);
-    DEBUG_LOGGER_LA("tokens: \n%s", lexical_analyzer_n::show_tokens(tokens).c_str());
+    DEBUG_LOGGER_LA("tokens: \n%s", aml::token_n::show_tokens(tokens).c_str());
 
-    auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(tokens);
-    DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_tree.show({}).c_str());
+    // auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(tokens);
+    // DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_tree.show({}).c_str());
 
-    auto stmt = syntax_analyzer_n::process(syntax_lisp_tree);
-    DEBUG_LOGGER_SA("syntax_tree: \n%s", stmt->show({}).c_str());
+    // auto stmt = syntax_analyzer_n::process(syntax_lisp_tree);
+    // DEBUG_LOGGER_SA("syntax_tree: \n%s", stmt->show({}).c_str());
 
-    auto code_ctx = intermediate_code_generator_n::process(stmt);
-    DEBUG_LOGGER_ICG("intermediate_code: \n%s", code_ctx.code.show().c_str());
+    // auto code_ctx = intermediate_code_generator_n::process(stmt);
+    // DEBUG_LOGGER_ICG("intermediate_code: \n%s", code_ctx.code.show().c_str());
 
-    // utils_n::data_t text;
+    // aml::utils_n::data_t text;
     // code_generator_n::process(text, instructions);
 
-    executor_n::process(code_ctx);
+    // executor_n::process(code_ctx);
   }
 };
 
