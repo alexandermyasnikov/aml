@@ -5,8 +5,31 @@ Author: Alexander Myasnikov
 mailto: myasnikov.alexander.s@gmail.com
 git: https://gitlab.com/amyasnikov/aml
 
-Version: 0.4
+Version: 0.5
 
+
+
+### Сборка
+
+```
+cmake -S. -B./build && cmake --build ./build -j8
+```
+
+
+
+### Запуск
+
+Компиляция исхдного кода в байт-код:
+
+```
+./build/aml/aml --cmd=compile --input=resources/sample.aml --output=resources/tmp.aml.binary
+```
+
+Исполнения байт-кода:
+
+```
+./build/aml/aml --cmd=exec --input=resources/tmp.aml.binary
+```
 
 
 ### Цели:
@@ -20,21 +43,6 @@ Version: 0.4
 * AML - стековый язык.
 * Данные в code  выровнены по границе uint8_t.
 * Данные в stack выровнены по uint64_t.
-
-
-
-### Грамматика
-
-* program: func+   expr
-* expr:    ARG     <digit>
-* expr:    BLOCK   expr+
-* expr:    CALL    expr    expr*
-* expr:    DEFVAR  <name>  expr
-* expr:    IF      expr    expr expr
-* expr:    INT     <digit>
-* expr:    SYSCALL expr+
-* expr:    VAR     <name>
-* func:    DEFN    expr    expr
 
 
 
@@ -58,6 +66,7 @@ Version: 0.4
 
 Исходный текст разбивается на следующие токены:
 
+```
 * whitespace
 * lp
 * rp
@@ -73,6 +82,7 @@ Version: 0.4
 * key_var
 * integer
 * ident
+```
 
 
 
@@ -81,8 +91,8 @@ Version: 0.4
 Из списка токенов строится дерево в соответствии с грамматикой:
 
 ```
-* lisp_tree: node
-* node: LP node* RP | key | integer | ident
+lisp_tree: node
+node: LP node* RP | key | integer | ident
 ```
 
 Эта стадия добавлена для упрощения разбора
