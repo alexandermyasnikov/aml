@@ -1,7 +1,7 @@
 #include "code_segment.h"
 #include "utils.h"
 
-namespace aml::env_n {
+namespace aml::code_n {
   namespace utils_n = aml::utils_n;
 
 

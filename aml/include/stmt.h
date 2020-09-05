@@ -21,25 +21,39 @@ namespace aml::stmt_n {
 
 
 
-  void check_not_leaf(const lisp_tree_n::lisp_tree_t& tree) {
+  static void check_not_leaf(const lisp_tree_n::lisp_tree_t& tree) {
     if (tree.is_leaf())
       throw syntax_error_t(tree.node);
   }
 
-  void check_size_eq(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
+  static void check_size_eq(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
     if (tree.nodes.size() != count)
       throw syntax_error_t(tree.node);
   }
 
-  void check_size_gt(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
+  static void check_size_gt(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
     if (tree.nodes.size() < count)
       throw syntax_error_t(tree.node);
   }
 
-  void check_type(const lisp_tree_n::lisp_tree_t& tree, token_n::type_t type) {
+  static void check_type(const lisp_tree_n::lisp_tree_t& tree, token_n::type_t type) {
     if (!tree.is_leaf() || tree.node.type != type)
       throw syntax_error_t(tree.node, type);
   }
+
+
+
+  // GRAMMAR
+  // program: func+   expr
+  // expr:    ARG     <digit>
+  // expr:    BLOCK   expr+
+  // expr:    CALL    expr    expr*
+  // expr:    DEFVAR  <name>  expr
+  // expr:    IF      expr    expr expr
+  // expr:    INT     <digit>
+  // expr:    SYSCALL expr+
+  // expr:    VAR     <name>
+  // func:    DEFN    expr    expr
 
 
 
