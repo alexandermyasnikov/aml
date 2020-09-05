@@ -17,13 +17,13 @@ cmake -S. -B./build && cmake --build ./build -j8
 
 ### Запуск
 
-Компиляция исхдного кода в байт-код:
+Компиляция исходного кода в байт-код:
 
 ```
 ./build/aml/aml --cmd=compile --input=resources/sample.aml --output=resources/tmp.aml.binary
 ```
 
-Исполнения байт-кода:
+Исполнение байт-кода:
 
 ```
 ./build/aml/aml --cmd=exec --input=resources/tmp.aml.binary
