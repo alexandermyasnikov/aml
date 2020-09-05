@@ -1,7 +1,6 @@
 #include <iostream>
-#include <variant>
-#include <iomanip>
-#include <regex>
+#include <fstream>
+#include <boost/program_options.hpp>
 
 #include "utils.h"
 #include "lisp_tree.h"
@@ -111,22 +110,94 @@ struct interpreter_t {
 
 
 
+std::string str_from_file(const std::string& path) {
+  std::ifstream file(path);
+  std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  return str;
+}
+
+void str_to_file(const std::string& str, const std::string& path) {
+  std::ofstream file(path);
+  file << str;
+}
+
+
 int main(int argc, char* argv[]) {
   std::string code;
 
-  if (argc < 2) {
-    std::cerr << "usage: ./<program> <code>" << std::endl;
+  struct options_t {
+    std::string input  = "";
+    std::string output = "";
+    std::string cmd    = "";
+    std::string log    = "aml." + std::to_string(std::time(0)) + ".log";
+
+    std::string show() {
+      std::string str;
+      std::cout << "input:  " << input << std::endl;
+      std::cout << "output: " << output << std::endl;
+      std::cout << "cmd:    " << cmd << std::endl;
+      std::cout << "log:    " << log << std::endl;
+      return str;
+    }
+  };
+
+  options_t options = {};
+
+  try {
+    using namespace boost::program_options;
+
+    options_description desc{"Options"};
+    desc.add_options()
+      ("help,h",
+        "help screen")
+      ("input,i",
+        value(&options.input)->required(),
+        "path of file")
+      ("output,i",
+        value(&options.output),
+        "path of file")
+      ("cmd,c",
+        value(&options.cmd)->required(),
+        "use \"compile\" or \"exec\"")
+      ("log,l",
+        value(&options.log),
+        "path of log")
+      ;
+
+    variables_map vm;
+    store(parse_command_line(argc, argv, desc), vm);
+
+    if (vm.count("help")) {
+      std::cout << desc << '\n';
+      return 0;
+    }
+    notify(vm);
+
+  } catch (const std::exception& ex) {
+    std::cerr << ex.what() << '\n';
     return 1;
   }
 
-  if (argc > 1) {
-    code = argv[1];
+  std::cout << options.show() << std::endl;
+
+  if (options.cmd == "compile") {
+    std::string code = str_from_file(options.input);
+    interpreter_t interpreter;
+
+    try {
+      interpreter.exec(code);
+    } catch (const std::exception& ex) {
+      std::cerr << ex.what() << '\n';
+      return 1;
+    }
+
+    str_to_file(std::to_string(std::time(0)), options.log);
+
+  // } else if (options.cmd == "exec") {
+  //   ;
+  } else {
+    std::cerr << "Unknown cmd. Use --help" << std::endl;
   }
-
-  // std::cout << "code: '\n" << code << "'" << std::endl;
-
-  interpreter_t interpreter;
-  interpreter.exec(code);
 
   return 0;
 }

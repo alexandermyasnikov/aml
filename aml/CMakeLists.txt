@@ -1,19 +1,19 @@
 FILE(GLOB SRCFILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
+find_package(Boost COMPONENTS program_options REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+
 add_executable(aml "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp" ${SRCFILES})
 
+set_property(TARGET aml PROPERTY CXX_STANDARD 20)
+# target_compile_options(aml PRIVATE -Werror -Wall -Wextra)
+
 target_include_directories(aml PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  )
+  "${PROJECT_SOURCE_DIR}/3rdparty"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-
-
-# target_include_directories(math_tests PUBLIC
-#   "${CMAKE_CURRENT_SOURCE_DIR}/include"
-#   "${PROJECT_SOURCE_DIR}/3rdparty"
-#   )
-
-# target_link_libraries(aml_tests PUBLIC aml)
+target_link_libraries(aml PUBLIC
+  ${Boost_LIBRARIES})
 
 # enable_testing()
 # add_test(aml_tests aml_tests)
