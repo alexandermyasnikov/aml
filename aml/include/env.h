@@ -57,7 +57,7 @@ namespace aml::env_n {
       }
 
       std::string key_str;
-      if constexpr (std::is_arithmetic<decltype(key)>::value) {
+      if constexpr (std::is_same<decltype(key), const size_t&>::value) {
         key_str = std::to_string(key);
       } else {
         key_str = key;

@@ -30,7 +30,7 @@ namespace aml::code_n {
 
     void write(const void* data, size_t size, size_t pos = std::string::npos);
     void write_u8(uint8_t data);
-    void write_i64(uint64_t data, size_t pos = std::string::npos);
+    void write_i64(int64_t data, size_t pos = std::string::npos);
 
     void read(void* data, size_t size, size_t& pos) const;
     uint8_t read_u8(size_t& pos) const;
@@ -44,7 +44,7 @@ namespace aml::code_n {
   struct code_ctx_t {
     code_t  code;
     size_t  rip = {};
-    int64_t rsp = {};
+    size_t  rsp = {};
   };
 
 }

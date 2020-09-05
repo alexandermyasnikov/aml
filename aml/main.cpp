@@ -123,13 +123,11 @@ void str_to_file(const std::string& str, const std::string& path) {
 
 
 int main(int argc, char* argv[]) {
-  std::string code;
-
   struct options_t {
     std::string input  = "";
     std::string output = "";
     std::string cmd    = "";
-    std::string log    = "aml." + std::to_string(std::time(0)) + ".log";
+    std::string log    = "aml." + std::to_string(std::time(nullptr)) + ".log";
 
     std::string show() {
       std::string str;
@@ -191,7 +189,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    str_to_file(std::to_string(std::time(0)), options.log);
+    str_to_file(std::to_string(std::time(nullptr)), options.log);
 
   // } else if (options.cmd == "exec") {
   //   ;

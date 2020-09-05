@@ -67,7 +67,7 @@ namespace aml::code_n {
     write(&data, sizeof(data));
   }
 
-  void code_t::write_i64(uint64_t data, size_t pos) {
+  void code_t::write_i64(int64_t data, size_t pos) {
     write(&data, sizeof(data), pos);
   }
 

@@ -30,15 +30,15 @@ namespace aml::exec_n {
         if (stack.empty())
           throw utils_n::fatal_error_t("invalid stack");
 
-        int64_t arg_count = stack.back();
+        size_t arg_count = stack.back();
         // DEBUG_LOGGER_EXEC("arg_count: %d", arg_count);
         if (arg_count < 1 || arg_count > stack.size())
           throw utils_n::fatal_error_t("invalid stack");
 
-        for (size_t i{}; i < arg_count - 1; ++i) {
-          int64_t arg = stack.at(stack.size() - 1 - 1/*arg_count*/ - i);
-          // DEBUG_LOGGER_EXEC("arg: %d", arg);
-        }
+        // for (size_t i{}; i < arg_count - 1; ++i) {
+        //   int64_t arg = stack.at(stack.size() - 1 - 1/*arg_count*/ - i);
+        //   // DEBUG_LOGGER_EXEC("arg: %d", arg);
+        // }
 
         int64_t rip_new = stack.at(stack.size() - 1 - arg_count);
         // DEBUG_LOGGER_EXEC("rip: %d", rip);
@@ -92,7 +92,7 @@ namespace aml::exec_n {
         rbp = stack.back();
         stack.pop_back();
 
-        int64_t arg_count = stack.back();
+        size_t arg_count = stack.back();
         stack.pop_back();
 
         if (stack.size() < arg_count)
@@ -109,14 +109,14 @@ namespace aml::exec_n {
         if (stack.empty())
           throw utils_n::fatal_error_t("invalid stack");
 
-        int64_t arg_count = stack.back();
+        size_t arg_count = stack.back();
         stack.pop_back();
         // DEBUG_LOGGER_EXEC("arg_count: %d", arg_count);
         if (arg_count > stack.size())
           throw utils_n::fatal_error_t("invalid stack");
 
         int64_t ret = -1;
-        int64_t op  = -1;
+        size_t op  = -1;
         if (arg_count > 0) {
           op = stack.back();
           stack.pop_back();
@@ -156,7 +156,7 @@ namespace aml::exec_n {
         if (arg_count) {
           // DEBUG_LOGGER_EXEC("invalid syscall: %d : %d", op, arg_count);
           for (size_t i{}; i < arg_count; ++i) {
-            int64_t arg = stack.back();
+            /*int64_t arg =*/ stack.back();
             stack.pop_back();
             // DEBUG_LOGGER_EXEC("arg: %d", arg);
           }

@@ -21,22 +21,22 @@ namespace aml::stmt_n {
 
 
 
-  static void check_not_leaf(const lisp_tree_n::lisp_tree_t& tree) {
+  static inline void check_not_leaf(const lisp_tree_n::lisp_tree_t& tree) {
     if (tree.is_leaf())
       throw syntax_error_t(tree.node);
   }
 
-  static void check_size_eq(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
+  static inline void check_size_eq(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
     if (tree.nodes.size() != count)
       throw syntax_error_t(tree.node);
   }
 
-  static void check_size_gt(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
+  static inline void check_size_gt(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
     if (tree.nodes.size() < count)
       throw syntax_error_t(tree.node);
   }
 
-  static void check_type(const lisp_tree_n::lisp_tree_t& tree, token_n::type_t type) {
+  static inline void check_type(const lisp_tree_n::lisp_tree_t& tree, token_n::type_t type) {
     if (!tree.is_leaf() || tree.node.type != type)
       throw syntax_error_t(tree.node, type);
   }

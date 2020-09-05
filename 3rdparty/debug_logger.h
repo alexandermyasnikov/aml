@@ -18,13 +18,13 @@ class debug_logger_t {
     fprintf(stderr, "%s %d    %*s#%d --> %s\n", name, indent / 2, indent, "", line, function);
     fflush(stderr);
     indent += 2;
-    time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    time = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
   }
 
   ~debug_logger_t( ) {
     indent -= 2;
 
-    time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - time;
+    time = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()) - time;
     fprintf(stderr, "%s %d %c  %*s# <-- %s %ldms\n", name, indent / 2, std::uncaught_exceptions() ? '*' : ' ', indent, "", function, time);
     fflush(stderr);
   }
@@ -56,7 +56,7 @@ struct log_duration_t {
   ~log_duration_t() {
     auto finish = std::chrono::steady_clock::now();
     auto dur = finish - start;
-    time = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+    time = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(dur).count());
   }
 
  private:
