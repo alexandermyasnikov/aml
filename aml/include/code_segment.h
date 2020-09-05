@@ -45,6 +45,9 @@ namespace aml::code_n {
     code_t  code;
     size_t  rip = {};
     size_t  rsp = {};
+
+    std::string save() const;
+    void load(const std::string&);
   };
 
 }

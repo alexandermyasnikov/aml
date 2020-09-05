@@ -108,4 +108,30 @@ namespace aml::code_n {
     }
     return str;
   }
+
+
+
+  std::string code_ctx_t::save() const {
+    std::string str;
+    code_t code_writer;
+    code_writer.write_i64(rip);
+    code_writer.write_i64(rsp);
+    return std::string(code_writer.buffer.begin(), code_writer.buffer.end())
+      + std::string(code.buffer.begin(), code.buffer.end());
+  }
+
+  void code_ctx_t::load(const std::string& str) { // TODO
+    if (str.size() < 2 * sizeof(size_t)) {
+      throw utils_n::fatal_error_t("invalid pos");
+    }
+
+    size_t pos = {};
+    code_t code_reader;
+    code_reader.buffer.resize(str.size());
+    std::copy(str.begin(), str.end(), code_reader.buffer.begin());
+    rip = code_reader.read_i64(pos);
+    rsp = code_reader.read_i64(pos);
+    code.buffer.resize(code_reader.buffer.size() - 2* sizeof(size_t));
+    std::copy(code_reader.buffer.begin() + 2 * sizeof(size_t), code_reader.buffer.end(), code.buffer.begin());
+  }
 }

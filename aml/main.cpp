@@ -124,6 +124,7 @@ void str_to_file(const std::string& str, const std::string& path) {
 
 int main(int argc, char* argv[]) {
   struct options_t {
+    bool        quiet  = false;
     std::string input  = "";
     std::string output = "";
     std::string cmd    = "";
@@ -148,6 +149,9 @@ int main(int argc, char* argv[]) {
     desc.add_options()
       ("help,h",
         "help screen")
+      ("quiet,q",
+        value(&options.quiet),
+        "Print less information")
       ("input,i",
         value(&options.input)->required(),
         "path of file")
@@ -166,33 +170,49 @@ int main(int argc, char* argv[]) {
     store(parse_command_line(argc, argv, desc), vm);
 
     if (vm.count("help")) {
-      std::cout << desc << '\n';
+      std::cout << desc << std::endl;
       return 0;
     }
     notify(vm);
 
   } catch (const std::exception& ex) {
-    std::cerr << ex.what() << '\n';
+    std::cerr << ex.what() << std::endl;
     return 1;
   }
 
-  std::cout << options.show() << std::endl;
+  if (!options.quiet) {
+    std::cout << options.show() << std::endl;
+  }
 
   if (options.cmd == "compile") {
-    std::string code = str_from_file(options.input);
-    interpreter_t interpreter;
-
-    try {
-      interpreter.exec(code);
-    } catch (const std::exception& ex) {
-      std::cerr << ex.what() << '\n';
+    if (options.output.empty()) {
+      std::cerr << "Option output is not set" << std::endl;
       return 1;
     }
 
-    str_to_file(std::to_string(std::time(nullptr)), options.log);
+    try {
+      using namespace aml_n;
+      auto code      = str_from_file(options.input);
+      auto tokens    = lexical_analyzer_n::process(code);
+      auto lisp_tree = syntax_lisp_analyzer_n::process(tokens);
+      auto stmt      = syntax_analyzer_n::process(lisp_tree);
+      auto code_ctx  = intermediate_code_generator_n::process(stmt);
+      str_to_file(code_ctx.save(), options.output);
+    } catch (const std::exception& ex) {
+      std::cerr << ex.what() << std::endl;
+      return 1;
+    }
 
-  // } else if (options.cmd == "exec") {
-  //   ;
+  } else if (options.cmd == "exec") {
+    try {
+      aml::code_n::code_ctx_t code_ctx;
+      code_ctx.load(str_from_file(options.input));
+      aml_n::executor_n::process(code_ctx);
+    } catch (const std::exception& ex) {
+      std::cerr << ex.what() << std::endl;
+      return 1;
+    }
+
   } else {
     std::cerr << "Unknown cmd. Use --help" << std::endl;
   }
