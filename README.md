@@ -1,11 +1,9 @@
-
 # AML
 
-Author: Alexander Myasnikov
-mailto: myasnikov.alexander.s@gmail.com
-git: https://gitlab.com/amyasnikov/aml
-
-Version: 0.5
+* Author: Alexander Myasnikov
+* mailto: myasnikov.alexander.s@gmail.com
+* git: https://gitlab.com/amyasnikov/aml
+* version: 0.5
 
 
 
