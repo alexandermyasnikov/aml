@@ -1,12 +1,6 @@
 FILE(GLOB SRCFILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
-find_package(Boost COMPONENTS program_options REQUIRED)
-include_directories(${Boost_INCLUDE_DIR})
-
-add_executable(aml "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp" ${SRCFILES})
-
-set_property(TARGET aml PROPERTY CXX_STANDARD 20)
-target_compile_options(aml PRIVATE
+SET(FLAGS
   -Werror
   -Wall
   -Wextra
@@ -28,20 +22,27 @@ target_compile_options(aml PRIVATE
   -Wredundant-decls
   )
 
-target_include_directories(aml PUBLIC
-  "${PROJECT_SOURCE_DIR}/3rdparty"
-  "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-target_link_libraries(aml PUBLIC
-  ${Boost_LIBRARIES})
+
+add_library(aml_lib SHARED ${SRCFILES})
+target_compile_options(aml_lib PUBLIC ${FLAGS})
+target_include_directories(aml_lib PUBLIC include)
+set_target_properties(aml_lib PROPERTIES OUTPUT_NAME aml CXX_STANDARD 20)
+
+
+
+find_package(Boost COMPONENTS program_options REQUIRED)
+add_executable(aml_bin main.cpp)
+target_include_directories(aml_bin PUBLIC include ${Boost_INCLUDE_DIR})
+target_link_libraries(aml_bin PUBLIC ${Boost_LIBRARIES} aml_lib)
+set_target_properties(aml_bin PROPERTIES OUTPUT_NAME aml CXX_STANDARD 20)
 
 
 
 find_package(Catch2 REQUIRED)
-add_executable(aml_tests "${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp" ${SRCFILES})
+add_executable(aml_tests tests/main.cpp)
 set_property(TARGET aml_tests PROPERTY CXX_STANDARD 20)
 target_include_directories(aml_tests PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(aml_tests Catch2::Catch2)
-add_test(aml_tests COMMAND echo "XXX TEST XXX")
+target_link_libraries(aml_tests aml_lib Catch2::Catch2)
 
 enable_testing()
