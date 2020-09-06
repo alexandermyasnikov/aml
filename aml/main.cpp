@@ -8,28 +8,6 @@
 #include "stmt.h"
 #include "executor.h"
 
-#include "debug_logger.h"
-
-#define DEBUG_LOGGER_TRACE_LA            DEBUG_LOGGER("la   ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_LA(...)             DEBUG_LOG("la   ", logger_indent_aml_t::indent, __VA_ARGS__)
-
-#define DEBUG_LOGGER_TRACE_SA            // DEBUG_LOGGER("sa   ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_SA(...)             DEBUG_LOG("sa   ", logger_indent_aml_t::indent, __VA_ARGS__)
-
-#define DEBUG_LOGGER_TRACE_ICG           // DEBUG_LOGGER("icg  ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_ICG(...)            DEBUG_LOG("icg  ", logger_indent_aml_t::indent, __VA_ARGS__)
-
-#define DEBUG_LOGGER_TRACE_CG            // DEBUG_LOGGER("cg   ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_CG(...)             // DEBUG_LOG("cg   ", logger_indent_aml_t::indent, __VA_ARGS__)
-
-#define DEBUG_LOGGER_TRACE_EXEC          DEBUG_LOGGER("exec ", logger_indent_aml_t::indent)
-#define DEBUG_LOGGER_EXEC(...)           DEBUG_LOG("exec ", logger_indent_aml_t::indent, __VA_ARGS__)
-
-template <typename T>
-struct logger_indent_t { static inline int indent = 0; };
-
-struct logger_indent_aml_t : logger_indent_t<logger_indent_aml_t> { };
-
 
 
 namespace aml_n {
@@ -130,61 +108,70 @@ void str_to_file(const std::string& str, const std::string& path) {
 
 
 
-int main(int argc, char* argv[]) {
-  struct options_t {
-    bool        quiet  = false;
-    std::string input  = {};
-    std::string output = {};
-    std::string cmd    = {};
-    std::string log    = {};
+struct options_t {
+  bool        quiet  = false;
+  std::string input  = {};
+  std::string output = {};
+  std::string cmd    = {};
+  std::string log    = {};
 
-    std::string show() {
-      std::string str;
-      std::cout << "input:  " << input << std::endl;
-      std::cout << "output: " << output << std::endl;
-      std::cout << "cmd:    " << cmd << std::endl;
-      std::cout << "log:    " << log << std::endl;
-      return str;
+  std::string show() {
+    std::string str;
+    std::cout << "input:  " << input << std::endl;
+    std::cout << "output: " << output << std::endl;
+    std::cout << "cmd:    " << cmd << std::endl;
+    std::cout << "log:    " << log << std::endl;
+    return str;
+  }
+
+  bool parse(int argc, char* argv[]) {
+    try {
+      using namespace boost::program_options;
+
+      options_description desc{"Options"};
+      desc.add_options()
+        ("help,h",
+         "help screen")
+        ("quiet,q",
+         value(&quiet),
+         "Print less information")
+        ("input,i",
+         value(&input)->required(),
+         "path of file")
+        ("output,i",
+         value(&output),
+         "path of file")
+        ("cmd,c",
+         value(&cmd)->required(),
+         "use \"compile\" or \"exec\"")
+        ("log,l",
+         value(&log),
+         "path of log")
+        ;
+
+      variables_map vm;
+      store(parse_command_line(argc, argv, desc), vm);
+
+      if (vm.count("help")) {
+        std::cout << desc << std::endl;
+        return false;
+      }
+      notify(vm);
+
+    } catch (const std::exception& ex) {
+      std::cerr << ex.what() << std::endl;
+      return false;
     }
-  };
+
+    return true;
+  }
+};
+
+
+int main(int argc, char* argv[]) {
 
   options_t options = {};
-
-  try {
-    using namespace boost::program_options;
-
-    options_description desc{"Options"};
-    desc.add_options()
-      ("help,h",
-        "help screen")
-      ("quiet,q",
-        value(&options.quiet),
-        "Print less information")
-      ("input,i",
-        value(&options.input)->required(),
-        "path of file")
-      ("output,i",
-        value(&options.output),
-        "path of file")
-      ("cmd,c",
-        value(&options.cmd)->required(),
-        "use \"compile\" or \"exec\"")
-      ("log,l",
-        value(&options.log),
-        "path of log")
-      ;
-
-    variables_map vm;
-    store(parse_command_line(argc, argv, desc), vm);
-
-    if (vm.count("help")) {
-      std::cout << desc << std::endl;
-      return 0;
-    }
-    notify(vm);
-
-  } catch (const std::exception& ex) {
-    std::cerr << ex.what() << std::endl;
+  if (!options.parse(argc, argv)) {
     return 1;
   }
 
