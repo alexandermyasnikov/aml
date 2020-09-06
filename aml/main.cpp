@@ -131,22 +131,22 @@ struct options_t {
       options_description desc{"Options"};
       desc.add_options()
         ("help,h",
-         "help screen")
+         "Help screen")
         ("quiet,q",
          value(&quiet),
          "Print less information")
         ("input,i",
          value(&input)->required(),
-         "path of file")
+         "Read from file")
         ("output,i",
          value(&output),
-         "\"-\" for stdout or path of file")
+         "Write to file")
         ("cmd,c",
          value(&cmd)->required(),
-         "use \"compile\" or \"exec\"")
+         "Availible commands \"compile\" and \"execute\"")
         ("log,l",
          value(&log),
-         "path of log")
+         "Write verbose output to file. Stdout is used if file is '-'")
         ;
 
       variables_map vm;
@@ -207,7 +207,7 @@ int main(int argc, char* argv[]) {
       str_to_file(log.str(), options.log);
     }
 
-  } else if (options.cmd == "exec") {
+  } else if (options.cmd == "execute") {
     try {
       aml::code_n::code_ctx_t code_ctx;
       code_ctx.load(str_from_file(options.input));
