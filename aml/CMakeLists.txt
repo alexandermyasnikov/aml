@@ -39,10 +39,9 @@ set_target_properties(aml_bin PROPERTIES OUTPUT_NAME aml CXX_STANDARD 20)
 
 
 
-find_package(Catch2 REQUIRED)
 add_executable(aml_tests tests/main.cpp)
 set_property(TARGET aml_tests PROPERTY CXX_STANDARD 20)
-target_include_directories(aml_tests PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(aml_tests aml_lib Catch2::Catch2)
+target_include_directories(aml_tests PUBLIC include ${CMAKE_SOURCE_DIR}/3rdparty)
+target_link_libraries(aml_tests aml_lib)
 
 enable_testing()
