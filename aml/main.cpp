@@ -130,23 +130,12 @@ struct options_t {
 
       options_description desc{"Options"};
       desc.add_options()
-        ("help,h",
-         "Help screen")
-        ("quiet,q",
-         value(&quiet),
-         "Print less information")
-        ("input,i",
-         value(&input)->required(),
-         "Read from file")
-        ("output,i",
-         value(&output),
-         "Write to file")
-        ("cmd,c",
-         value(&cmd)->required(),
-         "Availible commands \"compile\" and \"execute\"")
-        ("log,l",
-         value(&log),
-         "Write verbose output to file. Stdout is used if file is '-'")
+        ("help,h",                              "Help screen")
+        ("quiet,q",  value(&quiet),             "Print less information")
+        ("input,i",  value(&input)->required(), "Read from file")
+        ("output,i", value(&output),            "Write to file")
+        ("cmd,c",    value(&cmd)->required(),   "Availible commands \"compile\" and \"execute\"")
+        ("log,l",    value(&log),               "Write verbose output to file. Stdout is used if file is '-'")
         ;
 
       variables_map vm;

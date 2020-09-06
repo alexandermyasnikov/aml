@@ -64,7 +64,6 @@ cmake -S. -B./build && cmake --build ./build -j8
 
 Исходный текст разбивается на следующие токены:
 
-```
 * whitespace
 * lp
 * rp
@@ -80,7 +79,6 @@ cmake -S. -B./build && cmake --build ./build -j8
 * key_var
 * integer
 * ident
-```
 
 
 
@@ -187,7 +185,6 @@ M2:
 (var <name>) ->
     push8 <offset>
 ```
-
 
 
 
@@ -313,3 +310,6 @@ syscall:
 | 2   | <main> 0 rbp:0 rip:13 62                                            | 13  | RET         |
 | 0   | 62                                                                  | 14  | EXIT        |
 ```
+
+
+
