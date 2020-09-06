@@ -105,28 +105,28 @@ namespace aml::token_n {
 
 
 
-  std::string show_tokens(const token_n::tokens_t& tokens) {
-    std::string str;
+  std::string show_tokens(const tokens_t& tokens) {
+    std::stringstream ss;
     for (const auto& token : tokens) {
-      str += token.show() + " ";
+      ss << "token: " << static_cast<size_t>(token.type)
+        << "\t" << token.pos.show()
+        << "\t '" << token.lexeme << "'" << std::endl;
     }
-    return str;
+    return ss.str();
   }
 
   tokens_t process(const std::string& code) {
     tokens_t tokens;
-
+    token_t token;
     auto it = code.begin();
     auto ite = code.end();
-    token_n::token_t token;
 
     while (token.next(it, ite)) {
-      // DEBUG_LOGGER_LA("token: %zd \t '%s' \t '%s'", (size_t) token.type, token.pos.show().c_str(), token.lexeme.c_str());
       if (token.is_primary())
         tokens.push_back(token);
     }
 
-    if (token.type != token_n::type_t::eof) {
+    if (token.type != type_t::eof) {
       throw utils_n::fatal_error_t("token_t: expected eof at " + token.pos.show());
     }
 

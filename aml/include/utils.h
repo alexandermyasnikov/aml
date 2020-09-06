@@ -9,6 +9,9 @@ namespace aml::utils_n {
   const static inline size_t column_start = 1;
   const static inline size_t line_start = 1;
 
+  const static inline std::string separator_start = std::string(10, '*') + ' ';
+  const static inline std::string separator_line  = std::string(80, '*') + '\n';
+
   static inline std::string indent(size_t count) {
     static size_t tab_size = 2;
     return std::string(count * tab_size, ' ');

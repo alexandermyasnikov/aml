@@ -35,20 +35,43 @@ struct logger_indent_aml_t : logger_indent_t<logger_indent_aml_t> { };
 namespace aml_n {
 
   namespace lexical_analyzer_n {
-    auto process(const std::string& code) {
-      return aml::token_n::process(code);
+    auto process(const std::string& code, std::stringstream& log) {
+      auto tokens = aml::token_n::process(code);
+
+      log << aml::utils_n::separator_line;
+      log << aml::utils_n::separator_start << "source code" << std::endl;
+      log << aml::utils_n::separator_line;
+      log << code;
+
+      log << aml::utils_n::separator_line;
+      log << aml::utils_n::separator_start << "tokens" << std::endl;
+      log << aml::utils_n::separator_line;
+      log << aml::token_n::show_tokens(tokens) << std::endl;
+      return tokens;
     }
   }
 
   namespace syntax_lisp_analyzer_n {
-    auto process(const aml::token_n::tokens_t& tokens) {
-      return aml::lisp_tree_n::process(tokens);
+    auto process(const aml::token_n::tokens_t& tokens, std::stringstream& log) {
+      auto lisp_tree = aml::lisp_tree_n::process(tokens);
+
+      log << aml::utils_n::separator_line;
+      log << aml::utils_n::separator_start << "lisp_tree" << std::endl;
+      log << aml::utils_n::separator_line;
+      log << lisp_tree.show({}) << std::endl;
+      return lisp_tree;
     }
   }
 
   namespace syntax_analyzer_n {
-    auto process(const aml::lisp_tree_n::lisp_tree_t& tree) {
-      return std::make_shared<aml::stmt_n::stmt_program_t>(tree);
+    auto process(const aml::lisp_tree_n::lisp_tree_t& tree, std::stringstream& log) {
+      auto stmt = std::make_shared<aml::stmt_n::stmt_program_t>(tree);
+
+      log << aml::utils_n::separator_line;
+      log << aml::utils_n::separator_start << "stmt" << std::endl;
+      log << aml::utils_n::separator_line;
+      log << stmt->show({}) << std::endl;
+      return stmt;
     }
   }
 
@@ -56,9 +79,14 @@ namespace aml_n {
   }
 
   namespace intermediate_code_generator_n {
-    auto process(std::shared_ptr<aml::stmt_n::stmt_t> stmt) {
+    auto process(std::shared_ptr<aml::stmt_n::stmt_t> stmt, std::stringstream& log) {
       aml::code_n::code_ctx_t code_ctx;
       stmt->intermediate_code(code_ctx);
+
+      log << aml::utils_n::separator_line;
+      log << aml::utils_n::separator_start << "intermediate code" << std::endl;
+      log << aml::utils_n::separator_line;
+      log << code_ctx.code.show() << std::endl;
       return code_ctx;
     }
   }
@@ -87,27 +115,6 @@ namespace aml_n {
   }
 }
 
-struct interpreter_t {
-
-  void exec(const std::string code) {
-    using namespace aml_n;
-
-    auto tokens = lexical_analyzer_n::process(code);
-    DEBUG_LOGGER_LA("tokens: \n%s", aml::token_n::show_tokens(tokens).c_str());
-
-    auto syntax_lisp_tree = syntax_lisp_analyzer_n::process(tokens);
-    DEBUG_LOGGER_SA("syntax_lisp_tree: \n%s", syntax_lisp_tree.show({}).c_str());
-
-    auto stmt = syntax_analyzer_n::process(syntax_lisp_tree);
-    DEBUG_LOGGER_SA("syntax_tree: \n%s", stmt->show({}).c_str());
-
-    auto code_ctx = intermediate_code_generator_n::process(stmt);
-    DEBUG_LOGGER_ICG("intermediate_code: \n%s", code_ctx.code.show().c_str());
-
-    executor_n::process(code_ctx);
-  }
-};
-
 
 
 std::string str_from_file(const std::string& path) {
@@ -122,13 +129,14 @@ void str_to_file(const std::string& str, const std::string& path) {
 }
 
 
+
 int main(int argc, char* argv[]) {
   struct options_t {
     bool        quiet  = false;
-    std::string input  = "";
-    std::string output = "";
-    std::string cmd    = "";
-    std::string log    = "aml." + std::to_string(std::time(nullptr)) + ".log";
+    std::string input  = {};
+    std::string output = {};
+    std::string cmd    = {};
+    std::string log    = {};
 
     std::string show() {
       std::string str;
@@ -190,17 +198,26 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
+    std::stringstream log;
+
     try {
       using namespace aml_n;
       auto code      = str_from_file(options.input);
-      auto tokens    = lexical_analyzer_n::process(code);
-      auto lisp_tree = syntax_lisp_analyzer_n::process(tokens);
-      auto stmt      = syntax_analyzer_n::process(lisp_tree);
-      auto code_ctx  = intermediate_code_generator_n::process(stmt);
+      auto tokens    = lexical_analyzer_n::process(code, log);
+      auto lisp_tree = syntax_lisp_analyzer_n::process(tokens, log);
+      auto stmt      = syntax_analyzer_n::process(lisp_tree, log);
+      auto code_ctx  = intermediate_code_generator_n::process(stmt, log);
       str_to_file(code_ctx.save(), options.output);
     } catch (const std::exception& ex) {
       std::cerr << ex.what() << std::endl;
-      return 1;
+    }
+
+    if (options.log.empty()) {
+      ;
+    } else if (options.log == "-") {
+      std::cout << log.str();
+    } else {
+      str_to_file(log.str(), options.log);
     }
 
   } else if (options.cmd == "exec") {
