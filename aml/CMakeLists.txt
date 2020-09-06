@@ -35,5 +35,13 @@ target_include_directories(aml PUBLIC
 target_link_libraries(aml PUBLIC
   ${Boost_LIBRARIES})
 
-# enable_testing()
-# add_test(aml_tests aml_tests)
+
+
+find_package(Catch2 REQUIRED)
+add_executable(aml_tests "${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp" ${SRCFILES})
+set_property(TARGET aml_tests PROPERTY CXX_STANDARD 20)
+target_include_directories(aml_tests PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(aml_tests Catch2::Catch2)
+add_test(aml_tests COMMAND echo "XXX TEST XXX")
+
+enable_testing()
