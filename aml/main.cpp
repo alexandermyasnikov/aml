@@ -140,7 +140,7 @@ struct options_t {
          "path of file")
         ("output,i",
          value(&output),
-         "path of file")
+         "\"-\" for stdout or path of file")
         ("cmd,c",
          value(&cmd)->required(),
          "use \"compile\" or \"exec\"")
