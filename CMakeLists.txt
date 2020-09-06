@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(aml_project VERSION 0.5 LANGUAGES CXX)
+project(aml_project LANGUAGES CXX)
 
 add_subdirectory(aml)
 

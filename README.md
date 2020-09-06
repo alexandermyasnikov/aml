@@ -3,7 +3,7 @@
 * Author: Alexander Myasnikov
 * mailto: myasnikov.alexander.s@gmail.com
 * git: https://gitlab.com/amyasnikov/aml
-* version: 0.5
+* version: 0.6
 
 
 
@@ -61,7 +61,7 @@ cmake -S. -B./build && cmake --build ./build -j8
 
 ### Пример кода:
 
-Смотри sample.aml
+[Смотри sample.aml](resources/sample.aml)
 
 
 
