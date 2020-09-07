@@ -1,5 +1,7 @@
 FILE(GLOB SRCFILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
+set(Boost_USE_STATIC_LIBS ON)
+
 SET(FLAGS
   -Werror
   -Wall
