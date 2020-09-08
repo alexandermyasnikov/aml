@@ -46,8 +46,9 @@ namespace aml::aml_n {
 
 
   namespace syntax_analyzer_n {
-    static inline auto process(const aml::lisp_tree_n::lisp_tree_t& tree, std::stringstream& log) {
-      auto stmt = aml::stmt_n::stmt_t::parse(tree, nullptr, {aml::stmt_n::type_t::stmt_program});
+    static inline auto process(const aml::lisp_tree_n::lisp_tree_t& tree, const std::string& wd, std::stringstream& log) {
+      auto options = aml::stmt_n::options_t{.wd = wd};
+      auto stmt = aml::stmt_n::stmt_t::parse(tree, nullptr, {aml::stmt_n::type_t::stmt_program}, options);
 
       log << aml::utils_n::separator_line;
       log << aml::utils_n::separator_start << "stmt" << std::endl;
@@ -108,11 +109,11 @@ namespace aml::aml_n {
 
 
 
-  static inline bool compile(const std::string& input, std::string& output, std::stringstream& log) {
+  static inline bool compile(const std::string& input, std::string& output, const std::string& wd, std::stringstream& log) {
     try {
       auto tokens    = lexical_analyzer_n::process(input, log);
       auto lisp_tree = syntax_lisp_analyzer_n::process(tokens, log);
-      auto stmt      = syntax_analyzer_n::process(lisp_tree, log);
+      auto stmt      = syntax_analyzer_n::process(lisp_tree, wd, log);
       auto code_ctx  = intermediate_code_generator_n::process(stmt, log);
       output         = code_ctx.save();
     } catch (const std::exception& ex) {

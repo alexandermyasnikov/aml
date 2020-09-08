@@ -1,5 +1,6 @@
 #include <iostream>
 #include <boost/program_options.hpp>
+#include <filesystem>
 
 #include "aml.h"
 
@@ -9,7 +10,9 @@ struct options_t {
   std::string input  = {};
   std::string output = {};
   std::string cmd    = {};
-  std::string log    = {};
+  std::string log    = "-";
+  std::string wd     = std::filesystem::current_path();
+  // bool        debug  = {};
 
   std::string show() {
     std::stringstream ss;
@@ -17,6 +20,7 @@ struct options_t {
     ss << "output: " << output << std::endl;
     ss << "cmd:    " << cmd    << std::endl;
     ss << "log:    " << log    << std::endl;
+    ss << "wd:     " << wd     << std::endl;
     return ss.str();
   }
 
@@ -26,11 +30,12 @@ struct options_t {
 
       options_description desc{"Options"};
       desc.add_options()
-        ("help,h",                              "Help screen")
-        ("input,i",  value(&input)->required(), "Read from file")
-        ("output,i", value(&output),            "Write to file")
-        ("cmd,c",    value(&cmd)->required(),   "Availible commands \"compile\" and \"execute\"")
-        ("log,l",    value(&log),               "Write verbose output to file. Stdout is used if file is '-'")
+        ("help,h",                            "Help screen")
+        ("input",  value(&input)->required(), "Read from file")
+        ("output", value(&output),            "Write to file")
+        ("cmd",    value(&cmd)->required(),   "Availible commands \"compile\" and \"execute\"")
+        ("log",    value(&log),               "Write verbose output to file. Stdout is used if file is '-'")
+        ("wd",     value(&wd),                "Current working directory")
         ;
 
       variables_map vm;
@@ -64,7 +69,7 @@ int main(int argc, char* argv[]) {
   std::string input = aml::utils_n::str_from_file(options.input);
   std::stringstream log;
 
-  // log << options.show() << std::endl;
+  log << options.show() << std::endl;
 
   if (options.cmd == "compile") {
     if (options.output.empty()) {
@@ -73,7 +78,7 @@ int main(int argc, char* argv[]) {
     }
 
     std::string output;
-    success = aml::aml_n::compile(input, output, log);
+    success = aml::aml_n::compile(input, output, options.wd, log);
     aml::utils_n::str_to_file(output, options.output);
 
   } else if (options.cmd == "execute") {

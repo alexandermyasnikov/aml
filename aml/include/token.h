@@ -41,11 +41,13 @@ namespace aml::token_n {
     key_defvar,
     key_func,
     key_if,
+    key_include,
     key_int,
     key_syscall,
     key_var,
     integer,
     ident,
+    dq_string,
     eof,
   };
 
@@ -126,6 +128,10 @@ namespace aml::token_n {
         std::regex(R"(if)"),
         [](const std::string&) { return value_t{}; },
     }, {
+      type_t::key_include,
+        std::regex(R"(#include)"),
+        [](const std::string&) { return value_t{}; },
+    }, {
       type_t::key_int,
         std::regex(R"(int)"),
         [](const std::string&) { return value_t{}; },
@@ -145,6 +151,10 @@ namespace aml::token_n {
       type_t::ident,
         std::regex(R"([\w<=>&|+\-\!:*^\/]+)"),
         [](const std::string& lexeme) { return lexeme; },
+    }, {
+      type_t::dq_string,
+        std::regex(R"(".*?")"),
+        [](const std::string& lexeme) { return lexeme.substr(1, lexeme.size() - 2); },
     },
   };
 

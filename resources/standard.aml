@@ -1,0 +1,20 @@
+;  AML
+;  Author: Alexander Myasnikov
+;  mailto:myasnikov.alexander.s@gmail.com
+;  git:https://gitlab.com/amyasnikov/aml
+;  version: 0.6
+
+
+
+(#include "arithmetic.aml")
+(#include "logical.aml")
+(#include "comparison.aml")
+
+
+
+(defn square_tmp
+  (call
+    (func *)
+    (arg 1)
+    (arg 2)))
+

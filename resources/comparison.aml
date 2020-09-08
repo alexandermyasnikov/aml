@@ -1,0 +1,46 @@
+;  Author: Alexander Myasnikov
+;  mailto:myasnikov.alexander.s@gmail.com
+;  git:https://gitlab.com/amyasnikov/aml
+
+
+
+(#include "logical.aml")
+
+
+
+(defn ==
+  (syscall
+    (int 204)
+    (arg 1)
+    (arg 2)))
+
+(defn <
+  (syscall
+    (int 205)
+    (arg 1)
+    (arg 2)))
+
+
+
+(defn !=
+  (call
+    (func !)
+    (call
+      (func ==)
+      (arg 1)
+      (arg 2))))
+
+(defn >
+  (call
+    (func !)
+    (call
+      (func ||)
+      (call
+        (func <)
+        (arg 1)
+        (arg 2))
+      (call
+        (func ==)
+        (arg 1)
+        (arg 2)))))
+

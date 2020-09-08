@@ -35,6 +35,7 @@ namespace aml::token_n {
       case type_t::key_defvar:  return "defvar";
       case type_t::key_func:    return "func";
       case type_t::key_if:      return "if";
+      case type_t::key_include: return "#include";
       case type_t::key_int:     return "int";
       case type_t::key_syscall: return "syscall";
       case type_t::key_var:     return "var";
@@ -47,6 +48,11 @@ namespace aml::token_n {
                                 {
                                   const auto* p = std::get_if<std::string>(&value);
                                   return p ? *p : "<ident>";
+                                }
+      case type_t::dq_string:
+                                {
+                                  const auto* p = std::get_if<std::string>(&value);
+                                  return p ? ('"' + *p + '"') : "<dq_string>";
                                 }
       case type_t::eof:         return "\0";
       default:                  return "(unknown)";
@@ -87,7 +93,7 @@ namespace aml::token_n {
       return false;
     }
 
-    it               += match_best.length();
+    it         += match_best.length();
     pos.column += pos.length;
     pos.length  = match_best.length();
     lexeme      = match_best.str();

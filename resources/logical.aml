@@ -1,0 +1,23 @@
+;  Author: Alexander Myasnikov
+;  mailto:myasnikov.alexander.s@gmail.com
+;  git:https://gitlab.com/amyasnikov/aml
+
+
+
+(defn !
+  (syscall
+    (int 100)
+    (arg 1)))
+
+(defn &&
+  (syscall
+    (int 206)
+    (arg 1)
+    (arg 2)))
+
+(defn ||
+  (syscall
+    (int 207)
+    (arg 1)
+    (arg 2)))
+

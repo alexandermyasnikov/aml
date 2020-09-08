@@ -43,7 +43,7 @@ TEST_CASE("core tests") {
 
       {
         std::stringstream log;
-        bool success = aml::aml_n::compile(test_case.input, code, log);
+        bool success = aml::aml_n::compile(test_case.input, code, "", log);
         REQUIRE(success);
       }
 

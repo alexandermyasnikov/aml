@@ -1,4 +1,5 @@
 #include "stmt.h"
+#include <filesystem>
 
 namespace aml::stmt_n {
   namespace utils_n = aml::utils_n;
@@ -25,6 +26,7 @@ namespace aml::stmt_n {
       // case type_t::stmt_defvar:  return std::make_shared<stmt_defvar_t>();  break;
       case type_t::stmt_func:    return std::make_shared<stmt_func_t>();    break;
       case type_t::stmt_if:      return std::make_shared<stmt_if_t>();      break;
+      case type_t::stmt_include: return std::make_shared<stmt_include_t>(); break;
       case type_t::stmt_int:     return std::make_shared<stmt_int_t>();     break;
       case type_t::stmt_syscall: return std::make_shared<stmt_syscall_t>(); break;
       // case type_t::stmt_var:     return std::make_shared<stmt_var_t>();     break;
@@ -33,11 +35,11 @@ namespace aml::stmt_n {
   }
 
   std::shared_ptr<stmt_t> stmt_t::parse(const lisp_tree_n::lisp_tree_t& tree,
-      env_n::env_sptr_t env, const types_t& types) {
+      env_n::env_sptr_t env, const types_t& types, options_t& options) {
 
     for (const auto type : types) {
       auto stmt = factory(type);
-      if (stmt->parse_v(tree, env))
+      if (stmt->parse_v(tree, env, options))
         return stmt;
     }
 
@@ -46,7 +48,7 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_stub_t::parse_v(const lisp_tree_n::lisp_tree_t& /*tree*/, env_n::env_sptr_t /*env*/) {
+  bool stmt_stub_t::parse_v(const lisp_tree_n::lisp_tree_t& /*tree*/, env_n::env_sptr_t /*env*/, options_t& /*options*/) {
     return false;
   }
 
@@ -59,18 +61,39 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_program_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/) {
+  bool stmt_program_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
     if (tree.is_leaf()) return false;
 
-    env = std::make_shared<env_n::env_t>();
+    env = env ? env : std::make_shared<env_n::env_t>(env);
+    this->env = env;
     body = factory(type_t::stmt_stub);
 
     for (const auto& node : tree.nodes) {
-      auto stmt = parse(node, env, types_program);
+      auto stmt = parse(node, env, types_program, options);
       switch (stmt->type()) {
         case type_t::stmt_defn:      funcs.push_back(stmt); break;
         case type_t::stmt_call:      body = stmt;           break; // TODO check
-        default:                     throw syntax_error_t(node.node);
+        case type_t::stmt_include: {
+          auto stmt_d = std::dynamic_pointer_cast<stmt_include_t>(stmt);
+          if (!stmt_d)
+            break;
+
+          if (options.files.contains(stmt_d->filename))
+            break;
+
+          options.files.insert(stmt_d->filename);
+
+          std::string code = utils_n::str_from_file(std::filesystem::path(options.wd) / stmt_d->filename);
+          if (code.empty())
+            break;
+
+          auto tokens  = token_n::process(code);
+          auto tree    = lisp_tree_n::process(tokens);
+          auto stmt    = parse(tree, env, {type_t::stmt_program}, options);
+          auto program = std::dynamic_pointer_cast<stmt_program_t>(stmt);
+          funcs.insert(funcs.end(), program->funcs.begin(), program->funcs.end());
+          break;
+        } default: throw syntax_error_t(node.node);
       }
     }
     return true;
@@ -101,7 +124,7 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_arg_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/) {
+  bool stmt_arg_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/, options_t& /*options*/) {
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() < 2) return false;
 
@@ -163,15 +186,15 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_call_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) {
+  bool stmt_call_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() < 2) return false;
 
     if (!check_type(tree.nodes[0], token_n::type_t::key_call)) return false;
 
-    name = parse(tree.nodes[1], env, types_expr);
+    name = parse(tree.nodes[1], env, types_expr, options);
     for (const auto& node : tree.nodes | std::views::drop(2)) {
-      auto stmt = parse(node, env, types_expr);
+      auto stmt = parse(node, env, types_expr, options);
       args.push_back(stmt);
     }
 
@@ -211,7 +234,7 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_defn_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) {
+  bool stmt_defn_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 3) return false;
 
@@ -220,7 +243,7 @@ namespace aml::stmt_n {
 
     this->env = env;
     var = env->def_func(std::get<std::string>(tree.nodes[1].node.value));
-    body = parse(tree.nodes[2], env, types_expr);
+    body = parse(tree.nodes[2], env, types_expr, options);
     // DEBUG_LOGGER_SA("env: \n%s", this->env->show().c_str());
     return true;
   }
@@ -309,7 +332,7 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_func_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) {
+  bool stmt_func_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& /*options*/) {
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 2) return false;
 
@@ -339,15 +362,15 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_if_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) {
+  bool stmt_if_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 4) return false;
 
     if (!check_type(tree.nodes[0], token_n::type_t::key_if)) return false;
 
-    expr_if   = parse(tree.nodes[1], env, types_expr);
-    expr_then = parse(tree.nodes[2], env, types_expr);
-    expr_else = parse(tree.nodes[3], env, types_expr);
+    expr_if   = parse(tree.nodes[1], env, types_expr, options);
+    expr_then = parse(tree.nodes[2], env, types_expr, options);
+    expr_else = parse(tree.nodes[3], env, types_expr, options);
     return true;
   }
 
@@ -392,7 +415,33 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_int_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/) {
+  bool stmt_include_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/, options_t& /*options*/) {
+    if (tree.is_leaf()) return false;
+    if (tree.nodes.size() != 2) return false;
+
+    if (!check_type(tree.nodes[0], token_n::type_t::key_include)) return false;
+    if (!check_type(tree.nodes[1], token_n::type_t::dq_string)) return false;
+
+    filename = std::get<std::string>(tree.nodes[1].node.value);
+    return true;
+  }
+
+  std::string stmt_include_t::show(size_t /*deep*/) const {
+    std::string str;
+    str += token_n::token_t{.type = token_n::type_t::lp}.show();
+    str += token_n::token_t{.type = token_n::type_t::key_include}.show();
+    str += token_n::token_t{.type = token_n::type_t::whitespace}.show();
+    str += '"' + filename + '"';
+    str += token_n::token_t{.type = token_n::type_t::rp}.show();
+    return str;
+  }
+
+  void stmt_include_t::intermediate_code(code_n::code_ctx_t& /*code_ctx*/) const {
+  }
+
+
+
+  bool stmt_int_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/, options_t& /*options*/) {
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 2) return false;
 
@@ -421,14 +470,14 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_syscall_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) {
+  bool stmt_syscall_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() < 3) return false;
 
     if (!check_type(tree.nodes[0], token_n::type_t::key_syscall)) return false;
 
     for (const auto& node : tree.nodes | std::views::drop(1)) {
-      auto stmt = parse(node, env, types_expr);
+      auto stmt = parse(node, env, types_expr, options);
       args.push_back(stmt);
     }
 

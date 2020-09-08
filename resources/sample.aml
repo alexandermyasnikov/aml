@@ -2,94 +2,13 @@
 ;  Author: Alexander Myasnikov
 ;  mailto:myasnikov.alexander.s@gmail.com
 ;  git:https://gitlab.com/amyasnikov/aml
-;  version: 0.4
+;  version: 0.6
 
 
 
-; SYSCALL
-
-(defn !
-  (syscall
-    (int 100)
-    (arg 1)))
-
-(defn +
-  (syscall
-    (int 200)
-    (arg 1)
-    (arg 2)))
-
-(defn -
-  (syscall
-    (int 201)
-    (arg 1)
-    (arg 2)))
-
-(defn *
-  (syscall
-    (int 202)
-    (arg 1)
-    (arg 2)))
-
-(defn /
-  (syscall
-    (int 203)
-    (arg 1)
-    (arg 2)))
-
-(defn ==
-  (syscall
-    (int 204)
-    (arg 1)
-    (arg 2)))
-
-(defn <
-  (syscall
-    (int 205)
-    (arg 1)
-    (arg 2)))
-
-(defn &&
-  (syscall
-    (int 206)
-    (arg 1)
-    (arg 2)))
-
-(defn ||
-  (syscall
-    (int 207)
-    (arg 1)
-    (arg 2)))
+(#include "standard.aml")
 
 
-
-; STD
-
-(defn !=
-  (call
-    (func !)
-    (call
-      (func ==)
-      (arg 1)
-      (arg 2))))
-
-(defn >
-  (call
-    (func !)
-    (call
-      (func ||)
-      (call
-        (func <)
-        (arg 1)
-        (arg 2))
-      (call
-        (func ==)
-        (arg 1)
-        (arg 2)))))
-
-
-
-; SAMPLE
 
 (defn square
   (call

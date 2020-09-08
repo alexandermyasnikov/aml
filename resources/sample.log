@@ -1,3 +1,9 @@
+input:  resources/sample.aml
+output: resources/sample.binary.aml
+cmd:    compile
+log:    resources/sample.log
+wd:     /mnt/code/cpp/aml/resources
+
 ********************************************************************************
 ********** source code
 ********************************************************************************
@@ -5,94 +11,13 @@
 ;  Author: Alexander Myasnikov
 ;  mailto:myasnikov.alexander.s@gmail.com
 ;  git:https://gitlab.com/amyasnikov/aml
-;  version: 0.4
+;  version: 0.6
 
 
 
-; SYSCALL
-
-(defn !
-  (syscall
-    (int 100)
-    (arg 1)))
-
-(defn +
-  (syscall
-    (int 200)
-    (arg 1)
-    (arg 2)))
-
-(defn -
-  (syscall
-    (int 201)
-    (arg 1)
-    (arg 2)))
-
-(defn *
-  (syscall
-    (int 202)
-    (arg 1)
-    (arg 2)))
-
-(defn /
-  (syscall
-    (int 203)
-    (arg 1)
-    (arg 2)))
-
-(defn ==
-  (syscall
-    (int 204)
-    (arg 1)
-    (arg 2)))
-
-(defn <
-  (syscall
-    (int 205)
-    (arg 1)
-    (arg 2)))
-
-(defn &&
-  (syscall
-    (int 206)
-    (arg 1)
-    (arg 2)))
-
-(defn ||
-  (syscall
-    (int 207)
-    (arg 1)
-    (arg 2)))
+(#include "standard.aml")
 
 
-
-; STD
-
-(defn !=
-  (call
-    (func !)
-    (call
-      (func ==)
-      (arg 1)
-      (arg 2))))
-
-(defn >
-  (call
-    (func !)
-    (call
-      (func ||)
-      (call
-        (func <)
-        (arg 1)
-        (arg 2))
-      (call
-        (func ==)
-        (arg 1)
-        (arg 2)))))
-
-
-
-; SAMPLE
 
 (defn square
   (call
@@ -162,571 +87,223 @@
 ********************************************************************************
 ********** tokens
 ********************************************************************************
-token: 3	11:1:1	 '('
-token: 8	11:2:4	 'defn'
-token: 16	11:7:1	 '!'
-token: 3	12:3:1	 '('
-token: 13	12:4:7	 'syscall'
-token: 3	13:5:1	 '('
-token: 12	13:6:3	 'int'
-token: 15	13:10:3	 '100'
-token: 4	13:13:1	 ')'
-token: 3	14:5:1	 '('
-token: 5	14:6:3	 'arg'
-token: 15	14:10:1	 '1'
-token: 4	14:11:1	 ')'
-token: 4	14:12:1	 ')'
-token: 4	14:13:1	 ')'
-token: 3	16:1:1	 '('
-token: 8	16:2:4	 'defn'
-token: 16	16:7:1	 '+'
-token: 3	17:3:1	 '('
-token: 13	17:4:7	 'syscall'
-token: 3	18:5:1	 '('
-token: 12	18:6:3	 'int'
-token: 15	18:10:3	 '200'
-token: 4	18:13:1	 ')'
-token: 3	19:5:1	 '('
-token: 5	19:6:3	 'arg'
-token: 15	19:10:1	 '1'
-token: 4	19:11:1	 ')'
-token: 3	20:5:1	 '('
-token: 5	20:6:3	 'arg'
-token: 15	20:10:1	 '2'
-token: 4	20:11:1	 ')'
-token: 4	20:12:1	 ')'
-token: 4	20:13:1	 ')'
-token: 3	22:1:1	 '('
-token: 8	22:2:4	 'defn'
-token: 16	22:7:1	 '-'
-token: 3	23:3:1	 '('
-token: 13	23:4:7	 'syscall'
-token: 3	24:5:1	 '('
-token: 12	24:6:3	 'int'
-token: 15	24:10:3	 '201'
-token: 4	24:13:1	 ')'
-token: 3	25:5:1	 '('
-token: 5	25:6:3	 'arg'
-token: 15	25:10:1	 '1'
-token: 4	25:11:1	 ')'
-token: 3	26:5:1	 '('
-token: 5	26:6:3	 'arg'
-token: 15	26:10:1	 '2'
-token: 4	26:11:1	 ')'
-token: 4	26:12:1	 ')'
+token: 3	9:1:1	 '('
+token: 12	9:2:8	 '#include'
+token: 18	9:11:14	 '"standard.aml"'
+token: 4	9:25:1	 ')'
+token: 3	13:1:1	 '('
+token: 8	13:2:4	 'defn'
+token: 17	13:7:6	 'square'
+token: 3	14:3:1	 '('
+token: 7	14:4:4	 'call'
+token: 3	15:5:1	 '('
+token: 10	15:6:4	 'func'
+token: 17	15:11:1	 '*'
+token: 4	15:12:1	 ')'
+token: 3	16:5:1	 '('
+token: 5	16:6:3	 'arg'
+token: 16	16:10:1	 '1'
+token: 4	16:11:1	 ')'
+token: 3	17:5:1	 '('
+token: 5	17:6:3	 'arg'
+token: 16	17:10:1	 '2'
+token: 4	17:11:1	 ')'
+token: 4	17:12:1	 ')'
+token: 4	17:13:1	 ')'
+token: 3	19:1:1	 '('
+token: 8	19:2:4	 'defn'
+token: 17	19:7:9	 'perimeter'
+token: 3	20:3:1	 '('
+token: 7	20:4:4	 'call'
+token: 3	21:5:1	 '('
+token: 10	21:6:4	 'func'
+token: 17	21:11:1	 '*'
+token: 4	21:12:1	 ')'
+token: 3	22:5:1	 '('
+token: 13	22:6:3	 'int'
+token: 16	22:10:1	 '2'
+token: 4	22:11:1	 ')'
+token: 3	23:5:1	 '('
+token: 7	23:6:4	 'call'
+token: 3	24:7:1	 '('
+token: 10	24:8:4	 'func'
+token: 17	24:13:1	 '+'
+token: 4	24:14:1	 ')'
+token: 3	25:7:1	 '('
+token: 5	25:8:3	 'arg'
+token: 16	25:12:1	 '1'
+token: 4	25:13:1	 ')'
+token: 3	26:7:1	 '('
+token: 5	26:8:3	 'arg'
+token: 16	26:12:1	 '2'
 token: 4	26:13:1	 ')'
+token: 4	26:14:1	 ')'
+token: 4	26:15:1	 ')'
+token: 4	26:16:1	 ')'
 token: 3	28:1:1	 '('
 token: 8	28:2:4	 'defn'
-token: 16	28:7:1	 '*'
+token: 17	28:7:7	 'product'
 token: 3	29:3:1	 '('
-token: 13	29:4:7	 'syscall'
+token: 11	29:4:2	 'if'
 token: 3	30:5:1	 '('
-token: 12	30:6:3	 'int'
-token: 15	30:10:3	 '202'
-token: 4	30:13:1	 ')'
-token: 3	31:5:1	 '('
-token: 5	31:6:3	 'arg'
-token: 15	31:10:1	 '1'
-token: 4	31:11:1	 ')'
-token: 3	32:5:1	 '('
-token: 5	32:6:3	 'arg'
-token: 15	32:10:1	 '2'
-token: 4	32:11:1	 ')'
-token: 4	32:12:1	 ')'
+token: 7	30:6:4	 'call'
+token: 3	31:7:1	 '('
+token: 10	31:8:4	 'func'
+token: 17	31:13:1	 '>'
+token: 4	31:14:1	 ')'
+token: 3	32:7:1	 '('
+token: 5	32:8:3	 'arg'
+token: 16	32:12:1	 '1'
 token: 4	32:13:1	 ')'
-token: 3	34:1:1	 '('
-token: 8	34:2:4	 'defn'
-token: 16	34:7:1	 '/'
-token: 3	35:3:1	 '('
-token: 13	35:4:7	 'syscall'
-token: 3	36:5:1	 '('
-token: 12	36:6:3	 'int'
-token: 15	36:10:3	 '203'
+token: 3	33:7:1	 '('
+token: 13	33:8:3	 'int'
+token: 16	33:12:1	 '1'
+token: 4	33:13:1	 ')'
+token: 4	33:14:1	 ')'
+token: 3	34:5:1	 '('
+token: 7	34:6:4	 'call'
+token: 3	35:7:1	 '('
+token: 10	35:8:4	 'func'
+token: 17	35:13:1	 '*'
+token: 4	35:14:1	 ')'
+token: 3	36:7:1	 '('
+token: 5	36:8:3	 'arg'
+token: 16	36:12:1	 '1'
 token: 4	36:13:1	 ')'
-token: 3	37:5:1	 '('
-token: 5	37:6:3	 'arg'
-token: 15	37:10:1	 '1'
-token: 4	37:11:1	 ')'
-token: 3	38:5:1	 '('
-token: 5	38:6:3	 'arg'
-token: 15	38:10:1	 '2'
-token: 4	38:11:1	 ')'
-token: 4	38:12:1	 ')'
-token: 4	38:13:1	 ')'
-token: 3	40:1:1	 '('
-token: 8	40:2:4	 'defn'
-token: 16	40:7:2	 '=='
-token: 3	41:3:1	 '('
-token: 13	41:4:7	 'syscall'
-token: 3	42:5:1	 '('
-token: 12	42:6:3	 'int'
-token: 15	42:10:3	 '204'
-token: 4	42:13:1	 ')'
+token: 3	37:7:1	 '('
+token: 7	37:8:4	 'call'
+token: 3	38:9:1	 '('
+token: 10	38:10:4	 'func'
+token: 17	38:15:7	 'product'
+token: 4	38:22:1	 ')'
+token: 3	39:9:1	 '('
+token: 7	39:10:4	 'call'
+token: 3	40:11:1	 '('
+token: 10	40:12:4	 'func'
+token: 17	40:17:1	 '-'
+token: 4	40:18:1	 ')'
+token: 3	41:11:1	 '('
+token: 5	41:12:3	 'arg'
+token: 16	41:16:1	 '1'
+token: 4	41:17:1	 ')'
+token: 3	42:11:1	 '('
+token: 13	42:12:3	 'int'
+token: 16	42:16:1	 '1'
+token: 4	42:17:1	 ')'
+token: 4	42:18:1	 ')'
+token: 4	42:19:1	 ')'
+token: 4	42:20:1	 ')'
 token: 3	43:5:1	 '('
-token: 5	43:6:3	 'arg'
-token: 15	43:10:1	 '1'
+token: 13	43:6:3	 'int'
+token: 16	43:10:1	 '1'
 token: 4	43:11:1	 ')'
-token: 3	44:5:1	 '('
-token: 5	44:6:3	 'arg'
-token: 15	44:10:1	 '2'
-token: 4	44:11:1	 ')'
-token: 4	44:12:1	 ')'
-token: 4	44:13:1	 ')'
-token: 3	46:1:1	 '('
-token: 8	46:2:4	 'defn'
-token: 16	46:7:1	 '<'
-token: 3	47:3:1	 '('
-token: 13	47:4:7	 'syscall'
+token: 4	43:12:1	 ')'
+token: 4	43:13:1	 ')'
+token: 3	45:1:1	 '('
+token: 8	45:2:4	 'defn'
+token: 17	45:7:6	 'test_1'
+token: 3	46:3:1	 '('
+token: 7	46:4:4	 'call'
+token: 3	47:5:1	 '('
+token: 10	47:6:4	 'func'
+token: 17	47:11:6	 'square'
+token: 4	47:17:1	 ')'
 token: 3	48:5:1	 '('
-token: 12	48:6:3	 'int'
-token: 15	48:10:3	 '205'
-token: 4	48:13:1	 ')'
+token: 13	48:6:3	 'int'
+token: 16	48:10:1	 '3'
+token: 4	48:11:1	 ')'
 token: 3	49:5:1	 '('
-token: 5	49:6:3	 'arg'
-token: 15	49:10:1	 '1'
+token: 13	49:6:3	 'int'
+token: 16	49:10:1	 '5'
 token: 4	49:11:1	 ')'
-token: 3	50:5:1	 '('
-token: 5	50:6:3	 'arg'
-token: 15	50:10:1	 '2'
-token: 4	50:11:1	 ')'
-token: 4	50:12:1	 ')'
-token: 4	50:13:1	 ')'
-token: 3	52:1:1	 '('
-token: 8	52:2:4	 'defn'
-token: 16	52:7:2	 '&&'
-token: 3	53:3:1	 '('
-token: 13	53:4:7	 'syscall'
+token: 4	49:12:1	 ')'
+token: 4	49:13:1	 ')'
+token: 3	51:1:1	 '('
+token: 8	51:2:4	 'defn'
+token: 17	51:7:6	 'test_2'
+token: 3	52:3:1	 '('
+token: 7	52:4:4	 'call'
+token: 3	53:5:1	 '('
+token: 10	53:6:4	 'func'
+token: 17	53:11:9	 'perimeter'
+token: 4	53:20:1	 ')'
 token: 3	54:5:1	 '('
-token: 12	54:6:3	 'int'
-token: 15	54:10:3	 '206'
-token: 4	54:13:1	 ')'
+token: 13	54:6:3	 'int'
+token: 16	54:10:1	 '3'
+token: 4	54:11:1	 ')'
 token: 3	55:5:1	 '('
-token: 5	55:6:3	 'arg'
-token: 15	55:10:1	 '1'
+token: 13	55:6:3	 'int'
+token: 16	55:10:1	 '5'
 token: 4	55:11:1	 ')'
-token: 3	56:5:1	 '('
-token: 5	56:6:3	 'arg'
-token: 15	56:10:1	 '2'
-token: 4	56:11:1	 ')'
-token: 4	56:12:1	 ')'
-token: 4	56:13:1	 ')'
-token: 3	58:1:1	 '('
-token: 8	58:2:4	 'defn'
-token: 16	58:7:2	 '||'
-token: 3	59:3:1	 '('
-token: 13	59:4:7	 'syscall'
+token: 4	55:12:1	 ')'
+token: 4	55:13:1	 ')'
+token: 3	57:1:1	 '('
+token: 8	57:2:4	 'defn'
+token: 17	57:7:6	 'test_3'
+token: 3	58:3:1	 '('
+token: 7	58:4:4	 'call'
+token: 3	59:5:1	 '('
+token: 10	59:6:4	 'func'
+token: 17	59:11:7	 'product'
+token: 4	59:18:1	 ')'
 token: 3	60:5:1	 '('
-token: 12	60:6:3	 'int'
-token: 15	60:10:3	 '207'
+token: 13	60:6:3	 'int'
+token: 16	60:10:1	 '5'
+token: 4	60:11:1	 ')'
+token: 4	60:12:1	 ')'
 token: 4	60:13:1	 ')'
-token: 3	61:5:1	 '('
-token: 5	61:6:3	 'arg'
-token: 15	61:10:1	 '1'
-token: 4	61:11:1	 ')'
-token: 3	62:5:1	 '('
-token: 5	62:6:3	 'arg'
-token: 15	62:10:1	 '2'
-token: 4	62:11:1	 ')'
-token: 4	62:12:1	 ')'
-token: 4	62:13:1	 ')'
+token: 3	62:1:1	 '('
+token: 8	62:2:4	 'defn'
+token: 17	62:7:6	 'test_4'
+token: 3	63:3:1	 '('
+token: 11	63:4:2	 'if'
+token: 3	64:5:1	 '('
+token: 13	64:6:3	 'int'
+token: 16	64:10:1	 '1'
+token: 4	64:11:1	 ')'
+token: 3	65:5:1	 '('
+token: 5	65:6:3	 'arg'
+token: 16	65:10:1	 '1'
+token: 4	65:11:1	 ')'
+token: 3	66:5:1	 '('
+token: 5	66:6:3	 'arg'
+token: 16	66:10:1	 '1'
+token: 4	66:11:1	 ')'
+token: 4	66:12:1	 ')'
+token: 4	66:13:1	 ')'
 token: 3	68:1:1	 '('
-token: 8	68:2:4	 'defn'
-token: 16	68:7:2	 '!='
+token: 7	68:2:4	 'call'
 token: 3	69:3:1	 '('
-token: 7	69:4:4	 'call'
-token: 3	70:5:1	 '('
-token: 10	70:6:4	 'func'
-token: 16	70:11:1	 '!'
-token: 4	70:12:1	 ')'
-token: 3	71:5:1	 '('
-token: 7	71:6:4	 'call'
-token: 3	72:7:1	 '('
-token: 10	72:8:4	 'func'
-token: 16	72:13:2	 '=='
-token: 4	72:15:1	 ')'
-token: 3	73:7:1	 '('
-token: 5	73:8:3	 'arg'
-token: 15	73:12:1	 '1'
-token: 4	73:13:1	 ')'
-token: 3	74:7:1	 '('
-token: 5	74:8:3	 'arg'
-token: 15	74:12:1	 '2'
-token: 4	74:13:1	 ')'
-token: 4	74:14:1	 ')'
-token: 4	74:15:1	 ')'
-token: 4	74:16:1	 ')'
-token: 3	76:1:1	 '('
-token: 8	76:2:4	 'defn'
-token: 16	76:7:1	 '>'
-token: 3	77:3:1	 '('
-token: 7	77:4:4	 'call'
-token: 3	78:5:1	 '('
-token: 10	78:6:4	 'func'
-token: 16	78:11:1	 '!'
-token: 4	78:12:1	 ')'
-token: 3	79:5:1	 '('
-token: 7	79:6:4	 'call'
-token: 3	80:7:1	 '('
-token: 10	80:8:4	 'func'
-token: 16	80:13:2	 '||'
-token: 4	80:15:1	 ')'
-token: 3	81:7:1	 '('
-token: 7	81:8:4	 'call'
-token: 3	82:9:1	 '('
-token: 10	82:10:4	 'func'
-token: 16	82:15:1	 '<'
-token: 4	82:16:1	 ')'
-token: 3	83:9:1	 '('
-token: 5	83:10:3	 'arg'
-token: 15	83:14:1	 '1'
-token: 4	83:15:1	 ')'
-token: 3	84:9:1	 '('
-token: 5	84:10:3	 'arg'
-token: 15	84:14:1	 '2'
-token: 4	84:15:1	 ')'
-token: 4	84:16:1	 ')'
-token: 3	85:7:1	 '('
-token: 7	85:8:4	 'call'
-token: 3	86:9:1	 '('
-token: 10	86:10:4	 'func'
-token: 16	86:15:2	 '=='
-token: 4	86:17:1	 ')'
-token: 3	87:9:1	 '('
-token: 5	87:10:3	 'arg'
-token: 15	87:14:1	 '1'
-token: 4	87:15:1	 ')'
-token: 3	88:9:1	 '('
-token: 5	88:10:3	 'arg'
-token: 15	88:14:1	 '2'
-token: 4	88:15:1	 ')'
-token: 4	88:16:1	 ')'
-token: 4	88:17:1	 ')'
-token: 4	88:18:1	 ')'
-token: 4	88:19:1	 ')'
-token: 3	94:1:1	 '('
-token: 8	94:2:4	 'defn'
-token: 16	94:7:6	 'square'
-token: 3	95:3:1	 '('
-token: 7	95:4:4	 'call'
-token: 3	96:5:1	 '('
-token: 10	96:6:4	 'func'
-token: 16	96:11:1	 '*'
-token: 4	96:12:1	 ')'
-token: 3	97:5:1	 '('
-token: 5	97:6:3	 'arg'
-token: 15	97:10:1	 '1'
-token: 4	97:11:1	 ')'
-token: 3	98:5:1	 '('
-token: 5	98:6:3	 'arg'
-token: 15	98:10:1	 '2'
-token: 4	98:11:1	 ')'
-token: 4	98:12:1	 ')'
-token: 4	98:13:1	 ')'
-token: 3	100:1:1	 '('
-token: 8	100:2:4	 'defn'
-token: 16	100:7:9	 'perimeter'
-token: 3	101:3:1	 '('
-token: 7	101:4:4	 'call'
-token: 3	102:5:1	 '('
-token: 10	102:6:4	 'func'
-token: 16	102:11:1	 '*'
-token: 4	102:12:1	 ')'
-token: 3	103:5:1	 '('
-token: 12	103:6:3	 'int'
-token: 15	103:10:1	 '2'
-token: 4	103:11:1	 ')'
-token: 3	104:5:1	 '('
-token: 7	104:6:4	 'call'
-token: 3	105:7:1	 '('
-token: 10	105:8:4	 'func'
-token: 16	105:13:1	 '+'
-token: 4	105:14:1	 ')'
-token: 3	106:7:1	 '('
-token: 5	106:8:3	 'arg'
-token: 15	106:12:1	 '1'
-token: 4	106:13:1	 ')'
-token: 3	107:7:1	 '('
-token: 5	107:8:3	 'arg'
-token: 15	107:12:1	 '2'
-token: 4	107:13:1	 ')'
-token: 4	107:14:1	 ')'
-token: 4	107:15:1	 ')'
-token: 4	107:16:1	 ')'
-token: 3	109:1:1	 '('
-token: 8	109:2:4	 'defn'
-token: 16	109:7:7	 'product'
-token: 3	110:3:1	 '('
-token: 11	110:4:2	 'if'
-token: 3	111:5:1	 '('
-token: 7	111:6:4	 'call'
-token: 3	112:7:1	 '('
-token: 10	112:8:4	 'func'
-token: 16	112:13:1	 '>'
-token: 4	112:14:1	 ')'
-token: 3	113:7:1	 '('
-token: 5	113:8:3	 'arg'
-token: 15	113:12:1	 '1'
-token: 4	113:13:1	 ')'
-token: 3	114:7:1	 '('
-token: 12	114:8:3	 'int'
-token: 15	114:12:1	 '1'
-token: 4	114:13:1	 ')'
-token: 4	114:14:1	 ')'
-token: 3	115:5:1	 '('
-token: 7	115:6:4	 'call'
-token: 3	116:7:1	 '('
-token: 10	116:8:4	 'func'
-token: 16	116:13:1	 '*'
-token: 4	116:14:1	 ')'
-token: 3	117:7:1	 '('
-token: 5	117:8:3	 'arg'
-token: 15	117:12:1	 '1'
-token: 4	117:13:1	 ')'
-token: 3	118:7:1	 '('
-token: 7	118:8:4	 'call'
-token: 3	119:9:1	 '('
-token: 10	119:10:4	 'func'
-token: 16	119:15:7	 'product'
-token: 4	119:22:1	 ')'
-token: 3	120:9:1	 '('
-token: 7	120:10:4	 'call'
-token: 3	121:11:1	 '('
-token: 10	121:12:4	 'func'
-token: 16	121:17:1	 '-'
-token: 4	121:18:1	 ')'
-token: 3	122:11:1	 '('
-token: 5	122:12:3	 'arg'
-token: 15	122:16:1	 '1'
-token: 4	122:17:1	 ')'
-token: 3	123:11:1	 '('
-token: 12	123:12:3	 'int'
-token: 15	123:16:1	 '1'
-token: 4	123:17:1	 ')'
-token: 4	123:18:1	 ')'
-token: 4	123:19:1	 ')'
-token: 4	123:20:1	 ')'
-token: 3	124:5:1	 '('
-token: 12	124:6:3	 'int'
-token: 15	124:10:1	 '1'
-token: 4	124:11:1	 ')'
-token: 4	124:12:1	 ')'
-token: 4	124:13:1	 ')'
-token: 3	126:1:1	 '('
-token: 8	126:2:4	 'defn'
-token: 16	126:7:6	 'test_1'
-token: 3	127:3:1	 '('
-token: 7	127:4:4	 'call'
-token: 3	128:5:1	 '('
-token: 10	128:6:4	 'func'
-token: 16	128:11:6	 'square'
-token: 4	128:17:1	 ')'
-token: 3	129:5:1	 '('
-token: 12	129:6:3	 'int'
-token: 15	129:10:1	 '3'
-token: 4	129:11:1	 ')'
-token: 3	130:5:1	 '('
-token: 12	130:6:3	 'int'
-token: 15	130:10:1	 '5'
-token: 4	130:11:1	 ')'
-token: 4	130:12:1	 ')'
-token: 4	130:13:1	 ')'
-token: 3	132:1:1	 '('
-token: 8	132:2:4	 'defn'
-token: 16	132:7:6	 'test_2'
-token: 3	133:3:1	 '('
-token: 7	133:4:4	 'call'
-token: 3	134:5:1	 '('
-token: 10	134:6:4	 'func'
-token: 16	134:11:9	 'perimeter'
-token: 4	134:20:1	 ')'
-token: 3	135:5:1	 '('
-token: 12	135:6:3	 'int'
-token: 15	135:10:1	 '3'
-token: 4	135:11:1	 ')'
-token: 3	136:5:1	 '('
-token: 12	136:6:3	 'int'
-token: 15	136:10:1	 '5'
-token: 4	136:11:1	 ')'
-token: 4	136:12:1	 ')'
-token: 4	136:13:1	 ')'
-token: 3	138:1:1	 '('
-token: 8	138:2:4	 'defn'
-token: 16	138:7:6	 'test_3'
-token: 3	139:3:1	 '('
-token: 7	139:4:4	 'call'
-token: 3	140:5:1	 '('
-token: 10	140:6:4	 'func'
-token: 16	140:11:7	 'product'
-token: 4	140:18:1	 ')'
-token: 3	141:5:1	 '('
-token: 12	141:6:3	 'int'
-token: 15	141:10:1	 '5'
-token: 4	141:11:1	 ')'
-token: 4	141:12:1	 ')'
-token: 4	141:13:1	 ')'
-token: 3	143:1:1	 '('
-token: 8	143:2:4	 'defn'
-token: 16	143:7:6	 'test_4'
-token: 3	144:3:1	 '('
-token: 11	144:4:2	 'if'
-token: 3	145:5:1	 '('
-token: 12	145:6:3	 'int'
-token: 15	145:10:1	 '1'
-token: 4	145:11:1	 ')'
-token: 3	146:5:1	 '('
-token: 5	146:6:3	 'arg'
-token: 15	146:10:1	 '1'
-token: 4	146:11:1	 ')'
-token: 3	147:5:1	 '('
-token: 5	147:6:3	 'arg'
-token: 15	147:10:1	 '1'
-token: 4	147:11:1	 ')'
-token: 4	147:12:1	 ')'
-token: 4	147:13:1	 ')'
-token: 3	149:1:1	 '('
-token: 7	149:2:4	 'call'
-token: 3	150:3:1	 '('
-token: 10	150:4:4	 'func'
-token: 16	150:9:6	 'test_3'
-token: 4	150:15:1	 ')'
-token: 3	151:3:1	 '('
-token: 12	151:4:3	 'int'
-token: 15	151:8:3	 '101'
-token: 4	151:11:1	 ')'
-token: 3	152:3:1	 '('
-token: 12	152:4:3	 'int'
-token: 15	152:8:3	 '102'
-token: 4	152:11:1	 ')'
-token: 3	153:3:1	 '('
-token: 12	153:4:3	 'int'
-token: 15	153:8:3	 '103'
-token: 4	153:11:1	 ')'
-token: 3	154:3:1	 '('
-token: 12	154:4:3	 'int'
-token: 15	154:8:3	 '104'
-token: 4	154:11:1	 ')'
-token: 3	155:3:1	 '('
-token: 12	155:4:3	 'int'
-token: 15	155:8:3	 '105'
-token: 4	155:11:1	 ')'
-token: 4	155:12:1	 ')'
+token: 10	69:4:4	 'func'
+token: 17	69:9:6	 'test_3'
+token: 4	69:15:1	 ')'
+token: 3	70:3:1	 '('
+token: 13	70:4:3	 'int'
+token: 16	70:8:3	 '101'
+token: 4	70:11:1	 ')'
+token: 3	71:3:1	 '('
+token: 13	71:4:3	 'int'
+token: 16	71:8:3	 '102'
+token: 4	71:11:1	 ')'
+token: 3	72:3:1	 '('
+token: 13	72:4:3	 'int'
+token: 16	72:8:3	 '103'
+token: 4	72:11:1	 ')'
+token: 3	73:3:1	 '('
+token: 13	73:4:3	 'int'
+token: 16	73:8:3	 '104'
+token: 4	73:11:1	 ')'
+token: 3	74:3:1	 '('
+token: 13	74:4:3	 'int'
+token: 16	74:8:3	 '105'
+token: 4	74:11:1	 ')'
+token: 4	74:12:1	 ')'
 
 ********************************************************************************
 ********** lisp_tree
 ********************************************************************************
-((defn
-  !
-  (syscall
-    (int
-      100)
-    (arg
-      1)))
-(defn
-  +
-  (syscall
-    (int
-      200)
-    (arg
-      1)
-    (arg
-      2)))
-(defn
-  -
-  (syscall
-    (int
-      201)
-    (arg
-      1)
-    (arg
-      2)))
-(defn
-  *
-  (syscall
-    (int
-      202)
-    (arg
-      1)
-    (arg
-      2)))
-(defn
-  /
-  (syscall
-    (int
-      203)
-    (arg
-      1)
-    (arg
-      2)))
-(defn
-  ==
-  (syscall
-    (int
-      204)
-    (arg
-      1)
-    (arg
-      2)))
-(defn
-  <
-  (syscall
-    (int
-      205)
-    (arg
-      1)
-    (arg
-      2)))
-(defn
-  &&
-  (syscall
-    (int
-      206)
-    (arg
-      1)
-    (arg
-      2)))
-(defn
-  ||
-  (syscall
-    (int
-      207)
-    (arg
-      1)
-    (arg
-      2)))
-(defn
-  !=
-  (call
-    (func
-      !)
-    (call
-      (func
-        ==)
-      (arg
-        1)
-      (arg
-        2))))
-(defn
-  >
-  (call
-    (func
-      !)
-    (call
-      (func
-        ||)
-      (call
-        (func
-          <)
-        (arg
-          1)
-        (arg
-          2))
-      (call
-        (func
-          ==)
-        (arg
-          1)
-        (arg
-          2)))))
+((#include
+  "standard.aml")
 (defn
   square
   (call
@@ -827,11 +404,6 @@ token: 4	155:12:1	 ')'
 ********************************************************************************
 ********** stmt
 ********************************************************************************
-(defn !
-  (syscall
-    (int 100)
-    (arg 1)))
-
 (defn +
   (syscall
     (int 200)
@@ -856,17 +428,10 @@ token: 4	155:12:1	 ')'
     (arg 1)
     (arg 2)))
 
-(defn ==
+(defn !
   (syscall
-    (int 204)
-    (arg 1)
-    (arg 2)))
-
-(defn <
-  (syscall
-    (int 205)
-    (arg 1)
-    (arg 2)))
+    (int 100)
+    (arg 1)))
 
 (defn &&
   (syscall
@@ -877,6 +442,18 @@ token: 4	155:12:1	 ')'
 (defn ||
   (syscall
     (int 207)
+    (arg 1)
+    (arg 2)))
+
+(defn ==
+  (syscall
+    (int 204)
+    (arg 1)
+    (arg 2)))
+
+(defn <
+  (syscall
+    (int 205)
     (arg 1)
     (arg 2)))
 
@@ -901,6 +478,12 @@ token: 4	155:12:1	 ')'
         (func ==)
         (arg 1)
         (arg 2)))))
+
+(defn square_tmp
+  (call
+    (func *)
+    (arg 1)
+    (arg 2)))
 
 (defn square
   (call
@@ -969,61 +552,61 @@ token: 4	155:12:1	 ')'
 ********************************************************************************
 ********** intermediate code
 ********************************************************************************
-0		arg 4
-9		push8 100
-18		push8 2
-27		syscall
-28		ret
-29		arg 5
+0		arg 5
+9		arg 5
+18		push8 200
+27		push8 3
+36		syscall
+37		ret
 38		arg 5
-47		push8 200
-56		push8 3
-65		syscall
-66		ret
-67		arg 5
+47		arg 5
+56		push8 201
+65		push8 3
+74		syscall
+75		ret
 76		arg 5
-85		push8 201
-94		push8 3
-103		syscall
-104		ret
-105		arg 5
+85		arg 5
+94		push8 202
+103		push8 3
+112		syscall
+113		ret
 114		arg 5
-123		push8 202
-132		push8 3
-141		syscall
-142		ret
-143		arg 5
-152		arg 5
-161		push8 203
-170		push8 3
+123		arg 5
+132		push8 203
+141		push8 3
+150		syscall
+151		ret
+152		arg 4
+161		push8 100
+170		push8 2
 179		syscall
 180		ret
 181		arg 5
 190		arg 5
-199		push8 204
+199		push8 206
 208		push8 3
 217		syscall
 218		ret
 219		arg 5
 228		arg 5
-237		push8 205
+237		push8 207
 246		push8 3
 255		syscall
 256		ret
 257		arg 5
 266		arg 5
-275		push8 206
+275		push8 204
 284		push8 3
 293		syscall
 294		ret
 295		arg 5
 304		arg 5
-313		push8 207
+313		push8 205
 322		push8 3
 331		syscall
 332		ret
-333		push8 0
-342		push8 181
+333		push8 152
+342		push8 257
 351		arg 7
 360		arg 7
 369		push8 3
@@ -1031,14 +614,14 @@ token: 4	155:12:1	 ')'
 379		push8 2
 388		call
 389		ret
-390		push8 0
-399		push8 295
-408		push8 181
+390		push8 152
+399		push8 219
+408		push8 257
 417		arg 8
 426		arg 8
 435		push8 3
 444		call
-445		push8 219
+445		push8 295
 454		arg 9
 463		arg 9
 472		push8 3
@@ -1048,48 +631,48 @@ token: 4	155:12:1	 ')'
 492		push8 2
 501		call
 502		ret
-503		push8 105
+503		push8 76
 512		arg 6
 521		arg 6
 530		push8 3
 539		call
 540		ret
-541		push8 105
-550		push8 29
-559		arg 7
-568		arg 7
-577		push8 3
-586		call
-587		push8 2
-596		push8 3
-605		call
-606		ret
-607		push8 390
-616		push8 1
-625		arg 6
+541		push8 76
+550		arg 6
+559		arg 6
+568		push8 3
+577		call
+578		ret
+579		push8 76
+588		push8 0
+597		arg 7
+606		arg 7
+615		push8 3
+624		call
+625		push8 2
 634		push8 3
 643		call
-644		pop_jif 746
-653		push8 105
-662		push8 607
-671		push8 67
-680		push8 1
-689		arg 8
-698		push8 3
-707		call
-708		push8 2
-717		call
-718		arg 6
-727		push8 3
-736		call
-737		jmp 755
-746		push8 1
-755		ret
-756		push8 503
-765		push8 5
-774		push8 3
-783		push8 3
-792		call
+644		ret
+645		push8 390
+654		push8 1
+663		arg 6
+672		push8 3
+681		call
+682		pop_jif 784
+691		push8 76
+700		push8 645
+709		push8 38
+718		push8 1
+727		arg 8
+736		push8 3
+745		call
+746		push8 2
+755		call
+756		arg 6
+765		push8 3
+774		call
+775		jmp 793
+784		push8 1
 793		ret
 794		push8 541
 803		push8 5
@@ -1097,24 +680,30 @@ token: 4	155:12:1	 ')'
 821		push8 3
 830		call
 831		ret
-832		push8 607
+832		push8 579
 841		push8 5
-850		push8 2
-859		call
-860		ret
-861		push8 1
-870		pop_jif 897
-879		arg 4
-888		jmp 906
-897		arg 4
-906		ret
-907		push8 832
-916		push8 105
-925		push8 104
-934		push8 103
-943		push8 102
-952		push8 101
-961		push8 6
-970		call
-971		exit
+850		push8 3
+859		push8 3
+868		call
+869		ret
+870		push8 645
+879		push8 5
+888		push8 2
+897		call
+898		ret
+899		push8 1
+908		pop_jif 935
+917		arg 4
+926		jmp 944
+935		arg 4
+944		ret
+945		push8 870
+954		push8 105
+963		push8 104
+972		push8 103
+981		push8 102
+990		push8 101
+999		push8 6
+1008		call
+1009		exit
 
