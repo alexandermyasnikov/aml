@@ -43,6 +43,7 @@ namespace aml::stmt_n {
 
   enum class type_t {
     unknown,
+    stmt_stub,
     stmt_program,
     stmt_arg,
     stmt_block,
@@ -103,6 +104,15 @@ namespace aml::stmt_n {
 
     static std::shared_ptr<stmt_t> factory(type_t type);
     static std::shared_ptr<stmt_t> parse(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, const types_t& types);
+  };
+
+
+
+  struct stmt_stub_t : stmt_t {
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
+    std::string show(size_t deep) const override;
+    void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_stub; }
   };
 
 

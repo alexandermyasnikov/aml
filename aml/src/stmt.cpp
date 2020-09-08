@@ -16,6 +16,7 @@ namespace aml::stmt_n {
 
   std::shared_ptr<stmt_t> stmt_t::factory(type_t type) {
     switch (type) {
+      case type_t::stmt_stub:    return std::make_shared<stmt_stub_t>();    break;
       case type_t::stmt_program: return std::make_shared<stmt_program_t>(); break;
       case type_t::stmt_arg:     return std::make_shared<stmt_arg_t>();     break;
       case type_t::stmt_call:    return std::make_shared<stmt_call_t>();    break;
@@ -45,10 +46,24 @@ namespace aml::stmt_n {
 
 
 
+  bool stmt_stub_t::parse_v(const lisp_tree_n::lisp_tree_t& /*tree*/, env_n::env_sptr_t /*env*/) {
+    return false;
+  }
+
+  std::string stmt_stub_t::show(size_t /*deep*/) const {
+    return "";
+  }
+
+  void stmt_stub_t::intermediate_code(code_n::code_ctx_t& /*code_ctx*/) const {
+  }
+
+
+
   bool stmt_program_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/) {
     if (tree.is_leaf()) return false;
 
     env = std::make_shared<env_n::env_t>();
+    body = factory(type_t::stmt_stub);
 
     for (const auto& node : tree.nodes) {
       auto stmt = parse(node, env, types_program);
