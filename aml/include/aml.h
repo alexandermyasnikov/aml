@@ -47,7 +47,7 @@ namespace aml::aml_n {
 
   namespace syntax_analyzer_n {
     static inline auto process(const aml::lisp_tree_n::lisp_tree_t& tree, std::stringstream& log) {
-      auto stmt = std::make_shared<aml::stmt_n::stmt_program_t>(tree);
+      auto stmt = aml::stmt_n::stmt_t::parse(tree, nullptr, {aml::stmt_n::type_t::stmt_program});
 
       log << aml::utils_n::separator_line;
       log << aml::utils_n::separator_start << "stmt" << std::endl;

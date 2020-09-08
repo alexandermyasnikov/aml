@@ -16,19 +16,19 @@ struct test_case_t {
 static inline std::vector<test_case_t> test_cases = {
   {
     .name   = "int 0",
-    .input  = "(int 0)",
+    .input  = "(defn test (int 0)) (call (func test))",
     .output = "0",
   }, {
     .name   = "int 1",
-    .input  = "(int 1)",
+    .input  = "(defn test (int 1)) (call (func test))",
     .output = "1",
   }, {
     .name   = "if then",
-    .input  = "(if (int 1) (int 10) (int -10))",
+    .input  = "(defn test (if (int 1) (int 10) (int -10))) (call (func test))",
     .output = "10",
   }, {
     .name   = "if else",
-    .input  = "(if (int 0) (int 10) (int -10))",
+    .input  = "(defn test (if (int 0) (int 10) (int -10))) (call (func test))",
     .output = "-10",
   },
 };

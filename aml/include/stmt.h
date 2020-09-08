@@ -21,24 +21,8 @@ namespace aml::stmt_n {
 
 
 
-  static inline void check_not_leaf(const lisp_tree_n::lisp_tree_t& tree) {
-    if (tree.is_leaf())
-      throw syntax_error_t(tree.node);
-  }
-
-  static inline void check_size_eq(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
-    if (tree.nodes.size() != count)
-      throw syntax_error_t(tree.node);
-  }
-
-  static inline void check_size_gt(const lisp_tree_n::lisp_tree_t& tree, size_t count) {
-    if (tree.nodes.size() < count)
-      throw syntax_error_t(tree.node);
-  }
-
-  static inline void check_type(const lisp_tree_n::lisp_tree_t& tree, token_n::type_t type) {
-    if (!tree.is_leaf() || tree.node.type != type)
-      throw syntax_error_t(tree.node, type);
+  static inline bool check_type(const lisp_tree_n::lisp_tree_t& tree, token_n::type_t type) {
+    return tree.is_leaf() && tree.node.type == type;
   }
 
 
@@ -54,6 +38,44 @@ namespace aml::stmt_n {
   // expr:    SYSCALL expr+
   // expr:    VAR     <name>
   // func:    DEFN    expr    expr
+
+
+
+  enum class type_t {
+    unknown,
+    stmt_program,
+    stmt_arg,
+    stmt_block,
+    stmt_call,
+    stmt_defn,
+    stmt_defvar,
+    stmt_func,
+    stmt_if,
+    stmt_int,
+    stmt_syscall,
+    stmt_var,
+  };
+
+  using types_t = std::vector<type_t>;
+
+
+
+  static inline types_t types_program = {
+    type_t::stmt_defn,
+    type_t::stmt_call,
+  };
+
+  static inline types_t types_expr = {
+    type_t::stmt_arg,
+    // type_t::stmt_block,
+    type_t::stmt_call,
+    // type_t::stmt_defvar,
+    type_t::stmt_func,
+    type_t::stmt_if,
+    type_t::stmt_int,
+    type_t::stmt_syscall,
+    // type_t::stmt_var,
+  };
 
 
 
@@ -74,24 +96,30 @@ namespace aml::stmt_n {
 
   struct stmt_t {
     virtual ~stmt_t() { }
+    virtual bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) = 0;
     virtual std::string show(size_t deep) const = 0;
     virtual void intermediate_code(code_n::code_ctx_t& code_ctx) const = 0;
+    virtual type_t type() const = 0;
+
+    static std::shared_ptr<stmt_t> factory(type_t type);
+    static std::shared_ptr<stmt_t> parse(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, const types_t& types);
   };
 
 
 
   struct stmt_program_t : stmt_t {
-    using funcs_t = std::deque<std::shared_ptr<stmt_defn_t>>;
-    using body_t  = std::shared_ptr<stmt_expr_t>;
+    using funcs_t = std::deque<std::shared_ptr<stmt_t>>;
+    using body_t  = std::shared_ptr<stmt_t>;
     using env_t   = std::shared_ptr<env_n::env_t>;
 
     env_t   env;
     funcs_t funcs;
     body_t  body;
 
-    stmt_program_t(const lisp_tree_n::lisp_tree_t& tree);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_program; }
   };
 
 
@@ -99,58 +127,68 @@ namespace aml::stmt_n {
   struct stmt_arg_t : stmt_t {
     int64_t value = {};
 
-    stmt_arg_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_arg; }
   };
 
 
 
+#if 0
   struct stmt_block_t : stmt_t {
-    std::deque<std::shared_ptr<stmt_expr_t>> exprs;
+    std::deque<std::shared_ptr<stmt_t>> exprs;
 
-    stmt_block_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_block; }
   };
+#endif
 
 
 
   struct stmt_call_t : stmt_t {
-    std::shared_ptr<stmt_expr_t>              name;
-    std::vector<std::shared_ptr<stmt_expr_t>> args;
+    std::shared_ptr<stmt_t>              name;
+    std::vector<std::shared_ptr<stmt_t>> args;
 
-    stmt_call_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_call; }
   };
 
 
 
   struct stmt_defn_t : stmt_t {
-    env_n::var_info_sptr_t var;
-    std::shared_ptr<stmt_expr_t> body;
-    env_n::env_sptr_t            env;
+    env_n::var_info_sptr_t  var;
+    std::shared_ptr<stmt_t> body;
+    env_n::env_sptr_t       env;
 
-    stmt_defn_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_defn; }
   };
 
 
 
+#if 0
   struct stmt_defvar_t : stmt_t {
-    env_n::var_info_sptr_t var;
-    std::shared_ptr<stmt_expr_t> body;
-    env_n::env_sptr_t            env;
+    env_n::var_info_sptr_t  var;
+    std::shared_ptr<stmt_t> body;
+    env_n::env_sptr_t       env;
 
-    stmt_defvar_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_defvar; }
   };
+#endif
 
 
 
+#if 0
   struct stmt_expr_t : stmt_t {
     using expr_t = std::variant<
       std::shared_ptr<stmt_arg_t>,
@@ -165,10 +203,12 @@ namespace aml::stmt_n {
 
     expr_t expr;
 
-    stmt_expr_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::unknown; }
   };
+#endif
 
 
 
@@ -176,21 +216,23 @@ namespace aml::stmt_n {
     env_n::var_info_sptr_t var;
     env_n::env_sptr_t      env;
 
-    stmt_func_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_func; }
   };
 
 
 
   struct stmt_if_t : stmt_t {
-    std::shared_ptr<stmt_expr_t> expr_if;
-    std::shared_ptr<stmt_expr_t> expr_then;
-    std::shared_ptr<stmt_expr_t> expr_else;
+    std::shared_ptr<stmt_t> expr_if;
+    std::shared_ptr<stmt_t> expr_then;
+    std::shared_ptr<stmt_t> expr_else;
 
-    stmt_if_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_if; }
   };
 
 
@@ -198,28 +240,33 @@ namespace aml::stmt_n {
   struct stmt_int_t : stmt_t {
     int64_t value = {};
 
-    stmt_int_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_int; }
   };
 
 
 
   struct stmt_syscall_t : stmt_t {
-    std::vector<std::shared_ptr<stmt_expr_t>> args;
+    std::vector<std::shared_ptr<stmt_t>> args;
 
-    stmt_syscall_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_syscall; }
   };
 
 
 
+#if 0
   struct stmt_var_t : stmt_t {
     env_n::var_info_sptr_t var;
 
-    stmt_var_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env);
+    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
+    type_t type() const override { return type_t::stmt_var; }
   };
+#endif
 }
