@@ -10,18 +10,71 @@ namespace aml::code_n {
 
   enum class instruction_rpn_t : uint8_t {
     unknown,
-    arg,
+
+    arg, // deprecated
+    arg_1b,
+    arg_2b,
+    arg_3b,
+    arg_4b,
+    arg_5b,
+    arg_6b,
+    arg_7b,
+    arg_8b,
+
+    jmp,
+    // jmp_1b,
+    // jmp_2b,
+    // jmp_3b,
+    // jmp_4b,
+    // jmp_5b,
+    // jmp_6b,
+    // jmp_7b,
+    // jmp_8b,
+
+    pop_jif,
+    // pop_jif_1b,
+    // pop_jif_2b,
+    // pop_jif_3b,
+    // pop_jif_4b,
+    // pop_jif_5b,
+    // pop_jif_6b,
+    // pop_jif_7b,
+    // pop_jif_8b,
+
+    push, // deprecated
+    push_1b,
+    push_2b,
+    push_3b,
+    push_4b,
+    push_5b,
+    push_6b,
+    push_7b,
+    push_8b,
+
     call,
     exit,
-    jmp,
-    pop_jif,
-    push8,
     ret,
     syscall,
   };
 
   size_t instruction_size(instruction_rpn_t cmd);
   std::string show_instruction(instruction_rpn_t cmd);
+
+  static inline int64_t zigzag_encode(int64_t value) {
+    return (value << 1) ^ (value >> (64 - 1));
+  }
+
+  static inline int64_t zigzag_decode(int64_t value) {
+    return (value >> 1) ^ (-(value & 1));
+  }
+
+  static inline uint8_t zigzag_size(int64_t value) {
+    uint8_t ret = {};
+    for (; ret < 8 && value; ++ret) {
+      value >>= 8;
+    }
+    return std::max(ret, uint8_t(1));
+  }
 
 
 
@@ -31,10 +84,13 @@ namespace aml::code_n {
     void write(const void* data, size_t size, size_t pos = std::string::npos);
     void write_u8(uint8_t data);
     void write_i64(int64_t data, size_t pos = std::string::npos);
+    void write_int(int64_t data, size_t size);
+    void write_cmd(instruction_rpn_t cmd, int64_t value = {});
 
     void read(void* data, size_t size, size_t& pos) const;
     uint8_t read_u8(size_t& pos) const;
     int64_t read_i64(size_t& pos) const;
+    int64_t read_int(size_t& pos, size_t size) const;
 
     std::string show() const;
   };

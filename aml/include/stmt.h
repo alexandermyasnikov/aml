@@ -131,9 +131,9 @@ namespace aml::stmt_n {
     using body_t  = std::shared_ptr<stmt_t>;
     using env_t   = std::shared_ptr<env_n::env_t>;
 
-    env_t       env;
-    funcs_t     funcs;
-    body_t      body;
+    env_t   env;
+    funcs_t funcs;
+    body_t  body;
 
     bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) override;
     std::string show(size_t deep) const override;
@@ -202,30 +202,6 @@ namespace aml::stmt_n {
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
     type_t type() const override { return type_t::stmt_defvar; }
-  };
-#endif
-
-
-
-#if 0
-  struct stmt_expr_t : stmt_t {
-    using expr_t = std::variant<
-      std::shared_ptr<stmt_arg_t>,
-      std::shared_ptr<stmt_block_t>,
-      std::shared_ptr<stmt_call_t>,
-      std::shared_ptr<stmt_defvar_t>,
-      std::shared_ptr<stmt_func_t>,
-      std::shared_ptr<stmt_if_t>,
-      std::shared_ptr<stmt_int_t>,
-      std::shared_ptr<stmt_syscall_t>,
-      std::shared_ptr<stmt_var_t>>;
-
-    expr_t expr;
-
-    bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) override;
-    std::string show(size_t deep) const override;
-    void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
-    type_t type() const override { return type_t::unknown; }
   };
 #endif
 

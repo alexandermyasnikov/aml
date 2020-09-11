@@ -119,7 +119,7 @@ namespace aml::stmt_n {
     code_ctx.rip = code_ctx.code.buffer.size();
     // DEBUG_LOGGER_ICG("rip start: %d", code_ctx.rip);
     body->intermediate_code(code_ctx);
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::exit));
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::exit);
   }
 
 
@@ -146,8 +146,7 @@ namespace aml::stmt_n {
   }
 
   void stmt_arg_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::arg));
-    code_ctx.code.write_i64(code_ctx.rsp + value + 1/*rbp*/ + 1/*rip*/ + 1);
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::arg, code_ctx.rsp + value + 1/*rbp*/ + 1/*rip*/ + 1);
     code_ctx.rsp++;
   }
 
@@ -223,11 +222,10 @@ namespace aml::stmt_n {
     for (const auto& arg : args | std::views::reverse) {
       arg->intermediate_code(code_ctx);
     }
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::push8));
-    code_ctx.code.write_i64(args.size() + 1);
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::push, args.size() + 1);
     code_ctx.rsp++;
 
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::call));
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::call);
     code_ctx.rsp -= 1/*<count>*/ + (args.size() + 1);
     code_ctx.rsp += 1/*<return>*/;
   }
@@ -265,7 +263,7 @@ namespace aml::stmt_n {
     var->offset = code_ctx.code.buffer.size();
     // DEBUG_LOGGER_ICG("name: %s \t %d", var->name.c_str(), var->offset);
     body->intermediate_code(code_ctx);
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::ret));
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::ret);
     code_ctx.rsp = {};
   }
 
@@ -300,38 +298,6 @@ namespace aml::stmt_n {
 
 
 
-#if 0
-  stmt_expr_t::stmt_expr_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) {
-    check_not_leaf(tree);
-    check_size_gt(tree, 1);
-
-    switch (tree.nodes[0].node.type) {
-      case token_n::type_t::key_arg:     expr = std::make_shared<stmt_arg_t>(tree, env);     break;
-      case token_n::type_t::key_block:   expr = std::make_shared<stmt_block_t>(tree, env);   break;
-      case token_n::type_t::key_call:    expr = std::make_shared<stmt_call_t>(tree, env);    break;
-      case token_n::type_t::key_defvar:  expr = std::make_shared<stmt_defvar_t>(tree, env);  break;
-      case token_n::type_t::key_func:    expr = std::make_shared<stmt_func_t>(tree, env);    break;
-      case token_n::type_t::key_if:      expr = std::make_shared<stmt_if_t>(tree, env);      break;
-      case token_n::type_t::key_int:     expr = std::make_shared<stmt_int_t>(tree, env);     break;
-      case token_n::type_t::key_syscall: expr = std::make_shared<stmt_syscall_t>(tree, env); break;
-      case token_n::type_t::key_var:     expr = std::make_shared<stmt_var_t>(tree, env);     break;
-      default: throw syntax_error_t(tree.nodes[0].node);
-    }
-  }
-
-  std::string stmt_expr_t::show(size_t deep) const {
-    std::string str;
-    std::visit(utils_n::overloaded{[&str, deep] (const auto &expr) { str = expr->show(deep); } }, expr);
-    return str;
-  }
-
-  void stmt_expr_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
-    std::visit(utils_n::overloaded{[&code_ctx] (const auto &expr) { expr->intermediate_code(code_ctx); } }, expr);
-  }
-#endif
-
-
-
   bool stmt_func_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& /*options*/) {
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 2) return false;
@@ -355,8 +321,7 @@ namespace aml::stmt_n {
   }
 
   void stmt_func_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::push8));
-    code_ctx.code.write_i64(var->offset);
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::push, var->offset);
     code_ctx.rsp++;
   }
 
@@ -394,17 +359,15 @@ namespace aml::stmt_n {
   void stmt_if_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
     expr_if->intermediate_code(code_ctx);
 
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::pop_jif));
+    size_t m1 = code_ctx.code.buffer.size() + sizeof(uint8_t);
+    code_ctx.code.write_cmd((code_n::instruction_rpn_t::pop_jif), {});
     code_ctx.rsp--;
-    size_t m1 = code_ctx.code.buffer.size();
-    code_ctx.code.write_i64({});
 
     expr_then->intermediate_code(code_ctx);
 
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::jmp));
+    size_t m2 = code_ctx.code.buffer.size() + sizeof(uint8_t);
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::jmp, {});
     code_ctx.rsp--;
-    size_t m2 = code_ctx.code.buffer.size();
-    code_ctx.code.write_i64({});
 
     code_ctx.code.write_i64(code_ctx.code.buffer.size(), m1);
 
@@ -463,8 +426,7 @@ namespace aml::stmt_n {
   }
 
   void stmt_int_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::push8));
-    code_ctx.code.write_i64(value);
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::push, value);
     code_ctx.rsp++;
   }
 
@@ -501,11 +463,10 @@ namespace aml::stmt_n {
     for (const auto& arg : args | std::views::reverse) {
       arg->intermediate_code(code_ctx);
     }
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::push8));
-    code_ctx.code.write_i64(static_cast<int64_t>(args.size()));
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::push, static_cast<int64_t>(args.size()));
     code_ctx.rsp++;
 
-    code_ctx.code.write_u8(static_cast<uint8_t>(code_n::instruction_rpn_t::syscall));
+    code_ctx.code.write_cmd(code_n::instruction_rpn_t::syscall);
     code_ctx.rsp -= 1/*<count>*/ + args.size();
     code_ctx.rsp += 1/*<return>*/;
     code_ctx.rsp += 1/*<rbp>*/ + 1/*<rip>*/;

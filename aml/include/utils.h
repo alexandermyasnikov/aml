@@ -1,7 +1,9 @@
 #pragma once
 
-#include <stdexcept>
 #include <fstream>
+#include <iomanip>
+#include <iterator>
+#include <stdexcept>
 
 namespace aml::utils_n {
   template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -29,6 +31,17 @@ namespace aml::utils_n {
   static inline void str_to_file(const std::string& str, const std::string& path) {
     std::ofstream file(path);
     file << str;
+  }
+
+  static inline std::string hex(const std::string& str) {
+    static const char* digits = "0123456789ABCDEF";
+    std::ostringstream ss;
+    for (size_t i{}; i < str.size(); ++i) {
+      uint8_t c = str[i];
+      ss << digits[c >> 4] << digits[c & 0x0F];
+      ss << (i % 16 == 15 ? "\n" : " ");
+    }
+    return ss.str();
   }
 
 

@@ -552,158 +552,158 @@ token: 4	74:12:1	 ')'
 ********************************************************************************
 ********** intermediate code
 ********************************************************************************
-0		arg 5
-9		arg 5
-18		push8 200
-27		push8 3
-36		syscall
-37		ret
-38		arg 5
-47		arg 5
-56		push8 201
-65		push8 3
-74		syscall
-75		ret
-76		arg 5
-85		arg 5
-94		push8 202
-103		push8 3
-112		syscall
-113		ret
-114		arg 5
-123		arg 5
-132		push8 203
-141		push8 3
-150		syscall
-151		ret
-152		arg 4
-161		push8 100
-170		push8 2
-179		syscall
-180		ret
-181		arg 5
-190		arg 5
-199		push8 206
-208		push8 3
-217		syscall
-218		ret
-219		arg 5
-228		arg 5
-237		push8 207
-246		push8 3
-255		syscall
-256		ret
-257		arg 5
-266		arg 5
-275		push8 204
-284		push8 3
-293		syscall
-294		ret
-295		arg 5
-304		arg 5
-313		push8 205
-322		push8 3
-331		syscall
-332		ret
-333		push8 152
-342		push8 257
-351		arg 7
-360		arg 7
-369		push8 3
-378		call
-379		push8 2
-388		call
-389		ret
-390		push8 152
-399		push8 219
-408		push8 257
-417		arg 8
-426		arg 8
-435		push8 3
-444		call
-445		push8 295
-454		arg 9
-463		arg 9
-472		push8 3
-481		call
-482		push8 3
-491		call
-492		push8 2
-501		call
-502		ret
-503		push8 76
-512		arg 6
-521		arg 6
-530		push8 3
-539		call
-540		ret
-541		push8 76
-550		arg 6
-559		arg 6
-568		push8 3
-577		call
-578		ret
-579		push8 76
-588		push8 0
-597		arg 7
-606		arg 7
-615		push8 3
-624		call
-625		push8 2
-634		push8 3
-643		call
-644		ret
-645		push8 390
-654		push8 1
-663		arg 6
-672		push8 3
-681		call
-682		pop_jif 784
-691		push8 76
-700		push8 645
-709		push8 38
-718		push8 1
-727		arg 8
-736		push8 3
-745		call
-746		push8 2
-755		call
-756		arg 6
-765		push8 3
-774		call
-775		jmp 793
-784		push8 1
-793		ret
-794		push8 541
-803		push8 5
-812		push8 3
-821		push8 3
-830		call
-831		ret
-832		push8 579
-841		push8 5
-850		push8 3
-859		push8 3
-868		call
-869		ret
-870		push8 645
-879		push8 5
-888		push8 2
-897		call
-898		ret
-899		push8 1
-908		pop_jif 935
-917		arg 4
-926		jmp 944
-935		arg 4
-944		ret
-945		push8 870
-954		push8 105
-963		push8 104
-972		push8 103
-981		push8 102
-990		push8 101
-999		push8 6
-1008		call
-1009		exit
+0		arg_1b		5
+2		arg_1b		5
+4		push_2b		200
+7		push_1b		3
+9		syscall
+10		ret
+11		arg_1b		5
+13		arg_1b		5
+15		push_2b		201
+18		push_1b		3
+20		syscall
+21		ret
+22		arg_1b		5
+24		arg_1b		5
+26		push_2b		202
+29		push_1b		3
+31		syscall
+32		ret
+33		arg_1b		5
+35		arg_1b		5
+37		push_2b		203
+40		push_1b		3
+42		syscall
+43		ret
+44		arg_1b		4
+46		push_1b		100
+48		push_1b		2
+50		syscall
+51		ret
+52		arg_1b		5
+54		arg_1b		5
+56		push_2b		206
+59		push_1b		3
+61		syscall
+62		ret
+63		arg_1b		5
+65		arg_1b		5
+67		push_2b		207
+70		push_1b		3
+72		syscall
+73		ret
+74		arg_1b		5
+76		arg_1b		5
+78		push_2b		204
+81		push_1b		3
+83		syscall
+84		ret
+85		arg_1b		5
+87		arg_1b		5
+89		push_2b		205
+92		push_1b		3
+94		syscall
+95		ret
+96		push_1b		44
+98		push_1b		74
+100		arg_1b		7
+102		arg_1b		7
+104		push_1b		3
+106		call
+107		push_1b		2
+109		call
+110		ret
+111		push_1b		44
+113		push_1b		63
+115		push_1b		74
+117		arg_1b		8
+119		arg_1b		8
+121		push_1b		3
+123		call
+124		push_1b		85
+126		arg_1b		9
+128		arg_1b		9
+130		push_1b		3
+132		call
+133		push_1b		3
+135		call
+136		push_1b		2
+138		call
+139		ret
+140		push_1b		22
+142		arg_1b		6
+144		arg_1b		6
+146		push_1b		3
+148		call
+149		ret
+150		push_1b		22
+152		arg_1b		6
+154		arg_1b		6
+156		push_1b		3
+158		call
+159		ret
+160		push_1b		22
+162		push_1b		0
+164		arg_1b		7
+166		arg_1b		7
+168		push_1b		3
+170		call
+171		push_1b		2
+173		push_1b		3
+175		call
+176		ret
+177		push_1b		111
+179		push_1b		1
+181		arg_1b		6
+183		push_1b		3
+185		call
+186		pop_jif		113
+195		push_1b		22
+197		push_2b		177
+200		push_1b		11
+202		push_1b		1
+204		arg_1b		8
+206		push_1b		3
+208		call
+209		push_1b		2
+211		call
+212		arg_1b		6
+214		push_1b		3
+216		call
+217		jmp		114
+226		push_1b		1
+228		ret
+229		push_2b		150
+232		push_1b		5
+234		push_1b		3
+236		push_1b		3
+238		call
+239		ret
+240		push_2b		160
+243		push_1b		5
+245		push_1b		3
+247		push_1b		3
+249		call
+250		ret
+251		push_2b		177
+254		push_1b		5
+256		push_1b		2
+258		call
+259		ret
+260		push_1b		1
+262		pop_jif		141
+271		arg_1b		4
+273		jmp		142
+282		arg_1b		4
+284		ret
+285		push_2b		251
+288		push_1b		105
+290		push_1b		104
+292		push_1b		103
+294		push_1b		102
+296		push_1b		101
+298		push_1b		6
+300		call
+301		exit
 

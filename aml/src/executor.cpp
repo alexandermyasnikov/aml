@@ -19,21 +19,54 @@ namespace aml::exec_n {
       case code_n::instruction_rpn_t::exit: {
         return false;
 
-      } case code_n::instruction_rpn_t::arg: {
-        int64_t value = code.read_i64(rip);
-        // DEBUG_LOGGER_EXEC("value: %d", value);
+      } case code_n::instruction_rpn_t::arg_1b: {
+        int64_t value = code.read_int(rip, 1);
         stack.push_back(stack.at(stack.size() - value));
-        // DEBUG_LOGGER_EXEC("arg: %d", stack.back());
+        break;
+
+      } case code_n::instruction_rpn_t::arg_2b: {
+        int64_t value = code.read_int(rip, 2);
+        stack.push_back(stack.at(stack.size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_3b: {
+        int64_t value = code.read_int(rip, 3);
+        stack.push_back(stack.at(stack.size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_4b: {
+        int64_t value = code.read_int(rip, 4);
+        stack.push_back(stack.at(stack.size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_5b: {
+        int64_t value = code.read_int(rip, 5);
+        stack.push_back(stack.at(stack.size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_6b: {
+        int64_t value = code.read_int(rip, 6);
+        stack.push_back(stack.at(stack.size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_7b: {
+        int64_t value = code.read_int(rip, 7);
+        stack.push_back(stack.at(stack.size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_8b: {
+        int64_t value = code.read_int(rip, 8);
+        stack.push_back(stack.at(stack.size() - value));
         break;
 
       } case code_n::instruction_rpn_t::call: {
         if (stack.empty())
-          throw utils_n::fatal_error_t("invalid stack");
+          throw utils_n::fatal_error_t("invalid stack 1");
 
         size_t arg_count = stack.back();
         // DEBUG_LOGGER_EXEC("arg_count: %d", arg_count);
         if (arg_count < 1 || arg_count > stack.size())
-          throw utils_n::fatal_error_t("invalid stack");
+          throw utils_n::fatal_error_t("invalid stack 2");
 
         // for (size_t i{}; i < arg_count - 1; ++i) {
         //   int64_t arg = stack.at(stack.size() - 1 - 1/*arg_count*/ - i);
@@ -57,7 +90,7 @@ namespace aml::exec_n {
 
       } case code_n::instruction_rpn_t::pop_jif: {
         if (stack.empty())
-          throw utils_n::fatal_error_t("invalid stack");
+          throw utils_n::fatal_error_t("invalid stack 3");
 
         int64_t ret = stack.back();
         stack.pop_back();
@@ -73,15 +106,55 @@ namespace aml::exec_n {
 
         break;
 
-      } case code_n::instruction_rpn_t::push8: {
+      } case code_n::instruction_rpn_t::push: {
         int64_t value = code.read_i64(rip);
         stack.push_back(value);
         // DEBUG_LOGGER_EXEC("value: %d", value);
         break;
 
+      } case code_n::instruction_rpn_t::push_1b: {
+        int64_t value = code.read_int(rip, 1);
+        stack.push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_2b: {
+        int64_t value = code.read_int(rip, 2);
+        stack.push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_3b: {
+        int64_t value = code.read_int(rip, 3);
+        stack.push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_4b: {
+        int64_t value = code.read_int(rip, 4);
+        stack.push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_5b: {
+        int64_t value = code.read_int(rip, 5);
+        stack.push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_6b: {
+        int64_t value = code.read_int(rip, 6);
+        stack.push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_7b: {
+        int64_t value = code.read_int(rip, 7);
+        stack.push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_8b: {
+        int64_t value = code.read_int(rip, 8);
+        stack.push_back(value);
+        break;
+
       } case code_n::instruction_rpn_t::ret: {
         if (stack.size() < 4)
-          throw utils_n::fatal_error_t("invalid stack");
+          throw utils_n::fatal_error_t("invalid stack 4");
 
         int64_t ret = stack.back();
         stack.pop_back();
@@ -96,7 +169,7 @@ namespace aml::exec_n {
         stack.pop_back();
 
         if (stack.size() < arg_count)
-          throw utils_n::fatal_error_t("invalid stack");
+          throw utils_n::fatal_error_t("invalid stack 5");
 
         for (size_t i{}; i < arg_count; ++i) {
           stack.pop_back();
@@ -107,13 +180,13 @@ namespace aml::exec_n {
 
       } case code_n::instruction_rpn_t::syscall: {
         if (stack.empty())
-          throw utils_n::fatal_error_t("invalid stack");
+          throw utils_n::fatal_error_t("invalid stack 6");
 
         size_t arg_count = stack.back();
         stack.pop_back();
         // DEBUG_LOGGER_EXEC("arg_count: %d", arg_count);
         if (arg_count > stack.size())
-          throw utils_n::fatal_error_t("invalid stack");
+          throw utils_n::fatal_error_t("invalid stack 7");
 
         int64_t ret = -1;
         size_t op  = -1;
@@ -165,7 +238,7 @@ namespace aml::exec_n {
         stack.push_back(ret);
         break;
 
-      } default: throw utils_n::fatal_error_t("unknown cmd");
+      } default: throw utils_n::fatal_error_t("unknown cmd " + code_n::show_instruction(cmd));
     }
     return true;
   }
