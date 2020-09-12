@@ -5,7 +5,6 @@
 #include "lisp_tree.h"
 #include "token.h"
 #include "stmt.h"
-#include "executor.h"
 
 namespace aml::aml_n {
   namespace utils_n = aml::utils_n;
@@ -92,15 +91,18 @@ namespace aml::aml_n {
 
   namespace executor_n {
     static inline void process(const aml::code_n::code_ctx_t& code_ctx, std::stringstream& log) {
-      aml::exec_n::machine_t machine;
-      machine.rip = code_ctx.rip;
-      machine.rbp = {};
+      aml::code_n::stack_t stack;
+      stack.rip = code_ctx.rip;
+      stack.rbp = {};
 
-      while (machine.step(code_ctx.code)) {
+      for (size_t i{}; i < 1000000; ++i) {
+        if (!stack.step(code_ctx.code)) {
+          break;
+        }
       }
 
-      if (machine.stack.size() == 1) {
-        log << machine.stack.front();
+      if (stack.size() == 1) {
+        log << stack.get({});
       } else {
         log << std::endl << "invalid output" << std::endl;
       }

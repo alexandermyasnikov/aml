@@ -1,5 +1,6 @@
 #include "code_segment.h"
 
+#include <functional>
 #include "utils.h"
 
 namespace aml::code_n {
@@ -264,5 +265,241 @@ namespace aml::code_n {
     rsp = code_reader.read_i64(pos);
     code.buffer.resize(code_reader.buffer.size() - 2* sizeof(size_t));
     std::copy(code_reader.buffer.begin() + 2 * sizeof(size_t), code_reader.buffer.end(), code.buffer.begin());
+  }
+
+
+
+  bool stack_t::step(const code_t& code) {
+    auto cmd = static_cast<code_n::instruction_rpn_t>(code.read_u8(rip));
+
+    if (size() > 1000)
+      throw utils_n::fatal_error_t("too big stack");
+
+    switch (cmd) {
+      case code_n::instruction_rpn_t::exit: return false;
+
+      case code_n::instruction_rpn_t::arg_1b: {
+        int64_t value = code.read_int(rip, 1);
+        push_back(get(size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_2b: {
+        int64_t value = code.read_int(rip, 2);
+        push_back(get(size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_3b: {
+        int64_t value = code.read_int(rip, 3);
+        push_back(get(size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_4b: {
+        int64_t value = code.read_int(rip, 4);
+        push_back(get(size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_5b: {
+        int64_t value = code.read_int(rip, 5);
+        push_back(get(size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_6b: {
+        int64_t value = code.read_int(rip, 6);
+        push_back(get(size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_7b: {
+        int64_t value = code.read_int(rip, 7);
+        push_back(get(size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::arg_8b: {
+        int64_t value = code.read_int(rip, 8);
+        push_back(get(size() - value));
+        break;
+
+      } case code_n::instruction_rpn_t::call: {
+        size_t arg_count = back();
+        int64_t rip_new = get(size() - 1 - arg_count);
+
+        push_back(rbp);
+        push_back(rip);
+        rbp = size() - 1/*rbp*/ - 1/*rip*/;
+        rip = rip_new;
+        break;
+
+      } case code_n::instruction_rpn_t::jmp: {
+        int64_t rip_new = code.read_i64(rip);
+        rip = rip_new;
+        break;
+
+      } case code_n::instruction_rpn_t::pop_jif: {
+        int64_t ret = back();
+        pop_back();
+        int64_t rip_new = code.read_i64(rip);
+
+        if (!ret) {
+          rip = rip_new;
+        }
+        break;
+
+      } case code_n::instruction_rpn_t::push: {
+        int64_t value = code.read_i64(rip);
+        push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_1b: {
+        int64_t value = code.read_int(rip, 1);
+        push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_2b: {
+        int64_t value = code.read_int(rip, 2);
+        push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_3b: {
+        int64_t value = code.read_int(rip, 3);
+        push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_4b: {
+        int64_t value = code.read_int(rip, 4);
+        push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_5b: {
+        int64_t value = code.read_int(rip, 5);
+        push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_6b: {
+        int64_t value = code.read_int(rip, 6);
+        push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_7b: {
+        int64_t value = code.read_int(rip, 7);
+        push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::push_8b: {
+        int64_t value = code.read_int(rip, 8);
+        push_back(value);
+        break;
+
+      } case code_n::instruction_rpn_t::ret: {
+        int64_t ret = back();
+        pop_back();
+
+        rip = back();
+        pop_back();
+
+        rbp = back();
+        pop_back();
+
+        size_t arg_count = back();
+        pop_back();
+
+        for (size_t i{}; i < arg_count; ++i) {
+          pop_back();
+        }
+
+        push_back(ret);
+        break;
+
+      } case code_n::instruction_rpn_t::syscall: {
+        size_t arg_count = back();
+        pop_back();
+
+        int64_t ret = -1;
+        size_t op  = -1;
+        if (arg_count > 0) {
+          op = back();
+          pop_back();
+          arg_count--;
+
+          static std::vector<std::function<int64_t(int64_t, int64_t)>> ops2 = {
+            /*200*/ [](int64_t a, int64_t b) { return a + b; },
+            /*201*/ [](int64_t a, int64_t b) { return a - b; },
+            /*202*/ [](int64_t a, int64_t b) { return a * b; },
+            /*203*/ [](int64_t a, int64_t b) { return !b ? 0 : a / b; },
+            /*204*/ [](int64_t a, int64_t b) { return a == b; },
+            /*205*/ [](int64_t a, int64_t b) { return a < b; },
+            /*206*/ [](int64_t a, int64_t b) { return a && b; },
+            /*207*/ [](int64_t a, int64_t b) { return a || b; },
+          };
+
+          if (arg_count == 1 && op == 100) {
+            int64_t opnd1 = back();
+            pop_back();
+            arg_count--;
+            ret = !opnd1;
+
+          } else if (arg_count == 2 && op >= 200 && op < 200 + ops2.size()) {
+            int64_t opnd1 = back();
+            pop_back();
+            arg_count--;
+            int64_t opnd2 = back();
+            pop_back();
+            arg_count--;
+
+            ret = ops2[op - 200](opnd1, opnd2);
+          }
+        }
+
+        if (arg_count) {
+          for (size_t i{}; i < arg_count; ++i) {
+            pop_back();
+          }
+        }
+
+        push_back(ret);
+        break;
+
+      } default: break;
+    }
+
+    return true;
+  }
+
+  size_t stack_t::size() const {
+    return buffer.size();
+  }
+
+  int64_t& stack_t::get(size_t pos) {
+    static int64_t fake_value = {};
+    if (buffer.empty())
+      return fake_value;
+
+    return buffer[pos % buffer.size()];
+  }
+
+  int64_t& stack_t::back() {
+    return get(buffer.size() - 1);
+  }
+
+  void stack_t::push_back(int64_t value) {
+    if (buffer.size() >= limit)
+      buffer.pop_front();
+
+    buffer.push_back(value);
+  }
+
+  void stack_t::pop_back() {
+    if (!buffer.empty())
+      buffer.pop_back();
+  }
+
+  std::string stack_t::show() const {
+    std::string str;
+    str += "size: " + std::to_string(buffer.size()) + "\t";
+    str += "rbp: " + std::to_string(rbp) + "\t";
+    str += "rip: " + std::to_string(rip) + "\t";
+    str += "stack: ";
+    for (const auto& v : buffer) {
+      str += std::to_string(v) + " ";
+    }
+    return str;
   }
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <deque>
 #include <string>
 
 namespace aml::code_n {
@@ -91,4 +92,20 @@ namespace aml::code_n {
     void load(const std::string&);
   };
 
+
+
+  struct stack_t {
+    std::deque<int64_t> buffer;
+    int64_t rbp = {};
+    size_t  rip = {};
+    size_t  limit = 0xFFFF;
+
+    bool step(const code_t& code);
+    size_t size() const;
+    int64_t& get(size_t pos);
+    int64_t& back();
+    void push_back(int64_t value);
+    void pop_back();
+    std::string show() const;
+  };
 }
