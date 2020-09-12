@@ -479,12 +479,6 @@ token: 4	74:12:1	 ')'
         (arg 1)
         (arg 2)))))
 
-(defn square_tmp
-  (call
-    (func *)
-    (arg 1)
-    (arg 2)))
-
 (defn square
   (call
     (func *)
@@ -638,72 +632,66 @@ token: 4	74:12:1	 ')'
 148		call
 149		ret
 150		push_1b		22
-152		arg_1b		6
-154		arg_1b		6
-156		push_1b		3
-158		call
-159		ret
-160		push_1b		22
-162		push_1b		0
-164		arg_1b		7
-166		arg_1b		7
-168		push_1b		3
-170		call
-171		push_1b		2
+152		push_1b		0
+154		arg_1b		7
+156		arg_1b		7
+158		push_1b		3
+160		call
+161		push_1b		2
+163		push_1b		3
+165		call
+166		ret
+167		push_1b		111
+169		push_1b		1
+171		arg_1b		6
 173		push_1b		3
 175		call
-176		ret
-177		push_1b		111
-179		push_1b		1
-181		arg_1b		6
-183		push_1b		3
-185		call
-186		pop_jif		113
-195		push_1b		22
-197		push_2b		177
-200		push_1b		11
-202		push_1b		1
-204		arg_1b		8
-206		push_1b		3
-208		call
-209		push_1b		2
-211		call
-212		arg_1b		6
-214		push_1b		3
-216		call
-217		jmp		114
-226		push_1b		1
-228		ret
-229		push_2b		150
-232		push_1b		5
-234		push_1b		3
-236		push_1b		3
-238		call
-239		ret
-240		push_2b		160
-243		push_1b		5
-245		push_1b		3
-247		push_1b		3
-249		call
-250		ret
-251		push_2b		177
-254		push_1b		5
-256		push_1b		2
-258		call
-259		ret
-260		push_1b		1
-262		pop_jif		141
-271		arg_1b		4
-273		jmp		142
-282		arg_1b		4
-284		ret
-285		push_2b		251
-288		push_1b		105
-290		push_1b		104
-292		push_1b		103
-294		push_1b		102
-296		push_1b		101
-298		push_1b		6
-300		call
-301		exit
+176		pop_jif		108
+185		push_1b		22
+187		push_2b		167
+190		push_1b		11
+192		push_1b		1
+194		arg_1b		8
+196		push_1b		3
+198		call
+199		push_1b		2
+201		call
+202		arg_1b		6
+204		push_1b		3
+206		call
+207		jmp		109
+216		push_1b		1
+218		ret
+219		push_2b		140
+222		push_1b		5
+224		push_1b		3
+226		push_1b		3
+228		call
+229		ret
+230		push_2b		150
+233		push_1b		5
+235		push_1b		3
+237		push_1b		3
+239		call
+240		ret
+241		push_2b		167
+244		push_1b		5
+246		push_1b		2
+248		call
+249		ret
+250		push_1b		1
+252		pop_jif		136
+261		arg_1b		4
+263		jmp		137
+272		arg_1b		4
+274		ret
+275		push_2b		241
+278		push_1b		105
+280		push_1b		104
+282		push_1b		103
+284		push_1b		102
+286		push_1b		101
+288		push_1b		6
+290		call
+291		exit
 

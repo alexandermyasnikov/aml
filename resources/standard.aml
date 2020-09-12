@@ -10,11 +10,3 @@
 (#include "logical.aml")
 (#include "comparison.aml")
 
-
-
-(defn square_tmp
-  (call
-    (func *)
-    (arg 1)
-    (arg 2)))
-
