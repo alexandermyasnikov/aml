@@ -101,60 +101,60 @@ namespace aml::token_n {
       [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_arg,
-        std::regex(R"(arg)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(arg)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_block,
-        std::regex(R"(block)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(block)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_call,
-        std::regex(R"(call)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(call)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_defn,
-        std::regex(R"(defn)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(defn)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_defvar,
-        std::regex(R"(defvar)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(defvar)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_func,
-        std::regex(R"(func)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(func)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_if,
-        std::regex(R"(if)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(if)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_include,
-        std::regex(R"(#include)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(#include)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_int,
-        std::regex(R"(int)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(int)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_syscall,
-        std::regex(R"(syscall)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(syscall)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::key_var,
-        std::regex(R"(var)"),
-        [](const std::string&) { return value_t{}; },
+      std::regex(R"(var)"),
+      [](const std::string&) { return value_t{}; },
     }, {
       type_t::integer,
-        std::regex(R"([-+]?\d+)"),
-        [](const std::string& lexeme) { return stol(lexeme); },
+      std::regex(R"([-+]?\d+)"),
+      [](const std::string& lexeme) { return stol(lexeme); },
     }, {
       type_t::ident,
-        std::regex(R"([\w<=>&|+\-\!:*^\/]+)"),
-        [](const std::string& lexeme) { return lexeme; },
+      std::regex(R"([\w<=>&|+\-\!:*^\/]+)"),
+      [](const std::string& lexeme) { return lexeme; },
     }, {
       type_t::dq_string,
-        std::regex(R"(".*?")"),
-        [](const std::string& lexeme) { return lexeme.substr(1, lexeme.size() - 2); },
+      std::regex(R"(".*?")"),
+      [](const std::string& lexeme) { return lexeme.substr(1, lexeme.size() - 2); },
     },
   };
 

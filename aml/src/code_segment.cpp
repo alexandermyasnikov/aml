@@ -1,4 +1,5 @@
 #include "code_segment.h"
+
 #include "utils.h"
 
 namespace aml::code_n {
@@ -59,15 +60,15 @@ namespace aml::code_n {
   std::string show_instruction(instruction_rpn_t cmd) {
     std::string str;
     switch (cmd) {
-      case instruction_rpn_t::arg:     str += "arg";     break;
-      case instruction_rpn_t::arg_1b:  str += "arg_1b";  break;
-      case instruction_rpn_t::arg_2b:  str += "arg_2b";  break;
-      case instruction_rpn_t::arg_3b:  str += "arg_3b";  break;
-      case instruction_rpn_t::arg_4b:  str += "arg_4b";  break;
-      case instruction_rpn_t::arg_5b:  str += "arg_5b";  break;
-      case instruction_rpn_t::arg_6b:  str += "arg_6b";  break;
-      case instruction_rpn_t::arg_7b:  str += "arg_7b";  break;
-      case instruction_rpn_t::arg_8b:  str += "arg_8b";  break;
+      case instruction_rpn_t::arg:     str += "arg";       break;
+      case instruction_rpn_t::arg_1b:  str += "arg_1b";    break;
+      case instruction_rpn_t::arg_2b:  str += "arg_2b";    break;
+      case instruction_rpn_t::arg_3b:  str += "arg_3b";    break;
+      case instruction_rpn_t::arg_4b:  str += "arg_4b";    break;
+      case instruction_rpn_t::arg_5b:  str += "arg_5b";    break;
+      case instruction_rpn_t::arg_6b:  str += "arg_6b";    break;
+      case instruction_rpn_t::arg_7b:  str += "arg_7b";    break;
+      case instruction_rpn_t::arg_8b:  str += "arg_8b";    break;
 
       case instruction_rpn_t::push:     str += "push";     break;
       case instruction_rpn_t::push_1b:  str += "push_1b";  break;
@@ -79,7 +80,7 @@ namespace aml::code_n {
       case instruction_rpn_t::push_7b:  str += "push_7b";  break;
       case instruction_rpn_t::push_8b:  str += "push_8b";  break;
 
-      case instruction_rpn_t::pop_jif: str += "pop_jif";         break;
+      case instruction_rpn_t::pop_jif: str += "pop_jif";   break;
       // case instruction_rpn_t::pop_jif_1b:  str += "pop_jif_1b";  break;
       // case instruction_rpn_t::pop_jif_2b:  str += "pop_jif_2b";  break;
       // case instruction_rpn_t::pop_jif_3b:  str += "pop_jif_3b";  break;
@@ -89,7 +90,7 @@ namespace aml::code_n {
       // case instruction_rpn_t::pop_jif_7b:  str += "pop_jif_7b";  break;
       // case instruction_rpn_t::pop_jif_8b:  str += "pop_jif_8b";  break;
 
-      case instruction_rpn_t::jmp:     str += "jmp";     break;
+      case instruction_rpn_t::jmp:     str += "jmp";       break;
       // case instruction_rpn_t::jmp_1b:  str += "jmp_1b";  break;
       // case instruction_rpn_t::jmp_2b:  str += "jmp_2b";  break;
       // case instruction_rpn_t::jmp_3b:  str += "jmp_3b";  break;
@@ -99,19 +100,34 @@ namespace aml::code_n {
       // case instruction_rpn_t::jmp_7b:  str += "jmp_7b";  break;
       // case instruction_rpn_t::jmp_8b:  str += "jmp_8b";  break;
 
-      case instruction_rpn_t::call:    str += "call";    break;
-      case instruction_rpn_t::exit:    str += "exit";    break;
-      case instruction_rpn_t::ret:     str += "ret";     break;
-      case instruction_rpn_t::syscall: str += "syscall"; break;
+      case instruction_rpn_t::call:    str += "call";      break;
+      case instruction_rpn_t::exit:    str += "exit";      break;
+      case instruction_rpn_t::ret:     str += "ret";       break;
+      case instruction_rpn_t::syscall: str += "syscall";   break;
       default: str += "(unknown)";
     }
     return str;
   }
 
+  int64_t zigzag_encode(int64_t value) {
+    return (value << 1) ^ (value >> (8 * sizeof(int64_t) - 1));
+  }
+
+  int64_t zigzag_decode(int64_t value) {
+    return (value >> 1) ^ (-(value & 1));
+  }
+
+  uint8_t zigzag_size(int64_t value) {
+    uint8_t ret = {};
+    for (; ret < 8 && value; ++ret) {
+      value >>= 8;
+    }
+    return std::max(ret, uint8_t(1));
+  }
+
 
 
   void code_t::write(const void* data, size_t size, size_t pos) {
-#if 1
     pos = std::min(pos, buffer.size());
     for (size_t i{}; i < size; ++i, ++pos) {
       if (pos < buffer.size()) {
@@ -120,19 +136,6 @@ namespace aml::code_n {
         buffer.push_back(static_cast<const uint8_t*>(data)[i]);
       }
     }
-#else
-    if (pos == std::string::npos) {
-      for (size_t i{}; i < size; ++i) {
-        buffer.push_back(static_cast<const uint8_t*>(data)[i]);
-      }
-    } else if (pos + size < buffer.size()) {
-      for (size_t i{}; i < size; ++i) {
-        buffer[pos + i] = static_cast<const uint8_t*>(data)[i];
-      }
-    } else {
-      throw fatal_error_t("invalid pos");
-    }
-#endif
   }
 
   void code_t::write_u8(uint8_t data) {
@@ -153,7 +156,8 @@ namespace aml::code_n {
   void code_t::write_cmd(instruction_rpn_t cmd, int64_t value) {
     switch (cmd) {
       case instruction_rpn_t::arg:
-      case instruction_rpn_t::push: {
+      case instruction_rpn_t::push:
+      {
         auto value_new = zigzag_encode(value);
         auto size      = zigzag_size(value_new);
         write_u8(static_cast<uint8_t>(cmd) + size);
@@ -161,7 +165,8 @@ namespace aml::code_n {
         break;
       }
       case instruction_rpn_t::jmp:
-      case instruction_rpn_t::pop_jif: {
+      case instruction_rpn_t::pop_jif:
+      {
         write_u8(static_cast<uint8_t>(cmd));
         write_i64(value);
         break;
@@ -169,21 +174,23 @@ namespace aml::code_n {
       case instruction_rpn_t::call:
       case instruction_rpn_t::exit:
       case instruction_rpn_t::ret:
-      case instruction_rpn_t::syscall: {
+      case instruction_rpn_t::syscall:
+      {
         write_u8(static_cast<uint8_t>(cmd));
         break;
       }
-      default: throw utils_n::fatal_error_t("unknown instruction");
+      default: break;
     }
   }
 
   void code_t::read(void* data, size_t size, size_t& pos) const {
-    if (pos + size > buffer.size())
-      throw utils_n::fatal_error_t("invalid pos");
+    if (buffer.empty())
+      return;
+
     for (size_t i{}; i < size; ++i) {
-      static_cast<uint8_t*>(data)[i] = buffer[pos + i];
+      static_cast<uint8_t*>(data)[i] = buffer[pos % buffer.size()];
+      pos++;
     }
-    pos += size;
   }
 
   uint8_t code_t::read_u8(size_t& pos) const {

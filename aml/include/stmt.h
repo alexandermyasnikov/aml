@@ -29,16 +29,17 @@ namespace aml::stmt_n {
 
 
   // GRAMMAR
-  // program: func+   expr
-  // expr:    ARG     <digit>
-  // expr:    BLOCK   expr+
-  // expr:    CALL    expr    expr*
-  // expr:    DEFVAR  <name>  expr
-  // expr:    IF      expr    expr expr
-  // expr:    INT     <digit>
-  // expr:    SYSCALL expr+
-  // expr:    VAR     <name>
-  // func:    DEFN    expr    expr
+  // program: include*   func*      call
+  // expr:    ARG        <digit>
+  // expr:    BLOCK      expr+
+  // expr:    CALL       expr       expr*
+  // expr:    DEFVAR     <name>     expr
+  // expr:    IF         expr       expr expr
+  // expr:    INT        <digit>
+  // expr:    SYSCALL    expr+
+  // expr:    VAR        <name>
+  // func:    DEFN       expr       expr
+  // include: INCLUDE    <dq_str>
 
 
 
@@ -102,6 +103,7 @@ namespace aml::stmt_n {
     std::string           wd    = {};
     std::set<std::string> files = {};
   };
+
 
 
   struct stmt_t {

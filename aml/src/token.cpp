@@ -40,20 +40,20 @@ namespace aml::token_n {
       case type_t::key_syscall: return "syscall";
       case type_t::key_var:     return "var";
       case type_t::integer:
-                                {
-                                  const auto* p = std::get_if<int64_t>(&value);
-                                  return p ? std::to_string(*p) : "<integer>";
-                                }
+      {
+        const auto* p = std::get_if<int64_t>(&value);
+        return p ? std::to_string(*p) : "<integer>";
+      }
       case type_t::ident:
-                                {
-                                  const auto* p = std::get_if<std::string>(&value);
-                                  return p ? *p : "<ident>";
-                                }
+      {
+        const auto* p = std::get_if<std::string>(&value);
+        return p ? *p : "<ident>";
+      }
       case type_t::dq_string:
-                                {
-                                  const auto* p = std::get_if<std::string>(&value);
-                                  return p ? ('"' + *p + '"') : "<dq_string>";
-                                }
+      {
+        const auto* p = std::get_if<std::string>(&value);
+        return p ? ('"' + *p + '"') : "<dq_string>";
+      }
       case type_t::eof:         return "\0";
       default:                  return "(unknown)";
     }

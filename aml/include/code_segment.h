@@ -1,12 +1,9 @@
 #pragma once
 
 #include <vector>
-#include "utils.h"
+#include <string>
 
 namespace aml::code_n {
-  namespace utils_n = aml::utils_n;
-
-
 
   enum class instruction_rpn_t : uint8_t {
     unknown,
@@ -60,21 +57,9 @@ namespace aml::code_n {
   size_t instruction_size(instruction_rpn_t cmd);
   std::string show_instruction(instruction_rpn_t cmd);
 
-  static inline int64_t zigzag_encode(int64_t value) {
-    return (value << 1) ^ (value >> (64 - 1));
-  }
-
-  static inline int64_t zigzag_decode(int64_t value) {
-    return (value >> 1) ^ (-(value & 1));
-  }
-
-  static inline uint8_t zigzag_size(int64_t value) {
-    uint8_t ret = {};
-    for (; ret < 8 && value; ++ret) {
-      value >>= 8;
-    }
-    return std::max(ret, uint8_t(1));
-  }
+  int64_t zigzag_encode(int64_t value);
+  int64_t zigzag_decode(int64_t value);
+  uint8_t zigzag_size(int64_t value);
 
 
 

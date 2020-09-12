@@ -1,11 +1,9 @@
 #pragma once
 
-#include <deque>
-#include "utils.h"
 #include "code_segment.h"
+#include <deque>
 
 namespace aml::exec_n {
-  namespace utils_n = aml::utils_n;
   namespace code_n = aml::code_n;
 
 

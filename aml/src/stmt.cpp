@@ -1,13 +1,8 @@
 #include "stmt.h"
+
 #include <filesystem>
 
 namespace aml::stmt_n {
-  namespace utils_n = aml::utils_n;
-  namespace token_n = aml::token_n;
-  namespace code_n = aml::code_n;
-  namespace env_n = aml::env_n;
-
-
 
   syntax_error_t::syntax_error_t(const token_n::token_t& token, token_n::type_t type)
     : utils_n::fatal_error_t("synax error at or near '" + token.lexeme + "' at '" + token.pos.show() + "'"
@@ -73,7 +68,8 @@ namespace aml::stmt_n {
       switch (stmt->type()) {
         case type_t::stmt_defn:      funcs.push_back(stmt); break;
         case type_t::stmt_call:      body = stmt;           break; // TODO check
-        case type_t::stmt_include: {
+        case type_t::stmt_include:
+        {
           auto stmt_d = std::dynamic_pointer_cast<stmt_include_t>(stmt);
           if (!stmt_d)
             break;
@@ -91,9 +87,13 @@ namespace aml::stmt_n {
           auto tree    = lisp_tree_n::process(tokens);
           auto stmt    = parse(tree, env, {type_t::stmt_program}, options);
           auto program = std::dynamic_pointer_cast<stmt_program_t>(stmt);
+          if (!program)
+            break;
+
           funcs.insert(funcs.end(), program->funcs.begin(), program->funcs.end());
           break;
-        } default: throw syntax_error_t(node.node);
+        }
+        default: throw syntax_error_t(node.node);
       }
     }
     return true;
@@ -196,7 +196,6 @@ namespace aml::stmt_n {
       auto stmt = parse(node, env, types_expr, options);
       args.push_back(stmt);
     }
-
     return true;
   }
 
@@ -306,7 +305,6 @@ namespace aml::stmt_n {
     if (!check_type(tree.nodes[1], token_n::type_t::ident)) return false;
 
     var = env->get_func(std::get<std::string>(tree.nodes[1].node.value));
-
     return true;
   }
 
@@ -442,7 +440,6 @@ namespace aml::stmt_n {
       auto stmt = parse(node, env, types_expr, options);
       args.push_back(stmt);
     }
-
     return true;
   }
 
