@@ -1,6 +1,6 @@
-FILE(GLOB SRCFILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+file(GLOB SRCFILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
-SET(FLAGS
+set(FLAGS
   -Werror
   -Wall
   -Wextra
