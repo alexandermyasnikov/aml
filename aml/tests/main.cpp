@@ -4,21 +4,28 @@
 
 
 
-#define AML_TEST(name, output, input) \
+#define AML_TEST(name, expected, code) \
 TEST_CASE(name) {   \
-  std::string code;   \
+  using namespace aml::aml_n;   \
+  options_t options = {   \
+    .input = code,   \
+  };   \
   {   \
-    std::stringstream log;   \
-    bool success_compile = aml::aml_n::compile(input, code, "", log);   \
-    INFO("code " << log.str());   \
+    options.cmd = "compile";   \
+    bool success_compile = run(options);   \
+    INFO("errors: " << options.errors);   \
     REQUIRE(success_compile);   \
+    REQUIRE(options.errors.empty());   \
   }   \
+  options.input  = std::move(options.output);   \
+  options.output = {};   \
   {   \
-    std::stringstream log;   \
-    bool success_execute = aml::aml_n::execute(code, log);   \
-    INFO("code \n" << aml::utils_n::hex(code));   \
+    options.cmd = "execute";   \
+    bool success_execute = run(options);   \
+    INFO("errors: " << options.errors);   \
     REQUIRE(success_execute);   \
-    REQUIRE(output == log.str());   \
+    REQUIRE(options.errors.empty());   \
+    REQUIRE(expected == options.output);   \
   }   \
 }
 

@@ -3,10 +3,11 @@
 #include <deque>
 #include <memory>
 #include <set>
-#include "utils.h"
+
 #include "code_segment.h"
-#include "lisp_tree.h"
 #include "env.h"
+#include "lisp_tree.h"
+#include "utils.h"
 
 namespace aml::stmt_n {
   namespace utils_n = aml::utils_n;

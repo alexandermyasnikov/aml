@@ -1,0 +1,4 @@
+[T] #141   bool aml::aml_n::run(aml::aml_n::options_t&)
+[T] #118     bool aml::aml_n::execute(aml::aml_n::options_t&)
+[T] #118     bool aml::aml_n::execute(aml::aml_n::options_t&)~
+[T] #141   bool aml::aml_n::run(aml::aml_n::options_t&)~

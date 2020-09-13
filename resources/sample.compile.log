@@ -1,12 +1,6 @@
-input:  resources/sample.aml
-output: resources/sample.binary.aml
-cmd:    compile
-log:    resources/sample.log
-wd:     /mnt/code/cpp/aml/resources
-
-********************************************************************************
-********** source code
-********************************************************************************
+[T] #141   bool aml::aml_n::run(aml::aml_n::options_t&)
+[T] #9       aml::token_n::tokens_t aml::aml_n::lexical_analyzer_n::process(const string&)
+[I] #12        process: source code:
 ;  AML
 ;  Author: Alexander Myasnikov
 ;  mailto:myasnikov.alexander.s@gmail.com
@@ -84,9 +78,8 @@ wd:     /mnt/code/cpp/aml/resources
 
 
 
-********************************************************************************
-********** tokens
-********************************************************************************
+
+[I] #13        process: tokens:
 token: 3	9:1:1	 '('
 token: 12	9:2:8	 '#include'
 token: 18	9:11:14	 '"standard.aml"'
@@ -299,9 +292,9 @@ token: 16	74:8:3	 '105'
 token: 4	74:11:1	 ')'
 token: 4	74:12:1	 ')'
 
-********************************************************************************
-********** lisp_tree
-********************************************************************************
+[T] #9       aml::token_n::tokens_t aml::aml_n::lexical_analyzer_n::process(const string&)~
+[T] #20      aml::lisp_tree_n::lisp_tree_t aml::aml_n::syntax_lisp_analyzer_n::process(const tokens_t&)
+[I] #23        process: lisp tree:
 ((#include
   "standard.aml")
 (defn
@@ -401,9 +394,9 @@ token: 4	74:12:1	 ')'
     104)
   (int
     105)))
-********************************************************************************
-********** stmt
-********************************************************************************
+[T] #20      aml::lisp_tree_n::lisp_tree_t aml::aml_n::syntax_lisp_analyzer_n::process(const tokens_t&)~
+[T] #30      std::shared_ptr<aml::stmt_n::stmt_t> aml::aml_n::syntax_analyzer_n::process(const aml::lisp_tree_n::lisp_tree_t&, const string&)
+[I] #34        process: stmt:
 (defn +
   (syscall
     (int 200)
@@ -543,9 +536,9 @@ token: 4	74:12:1	 ')'
   (int 105))
 
 
-********************************************************************************
-********** intermediate code
-********************************************************************************
+[T] #30      std::shared_ptr<aml::stmt_n::stmt_t> aml::aml_n::syntax_analyzer_n::process(const aml::lisp_tree_n::lisp_tree_t&, const string&)~
+[T] #41      aml::code_n::code_ctx_t aml::aml_n::intermediate_code_generator_n::process(std::shared_ptr<aml::stmt_n::stmt_t>)
+[I] #45        process: intermediate code:
 0		arg_1b		5
 2		arg_1b		5
 4		push_2b		200
@@ -695,3 +688,5 @@ token: 4	74:12:1	 ')'
 290		call
 291		exit
 
+[T] #41      aml::code_n::code_ctx_t aml::aml_n::intermediate_code_generator_n::process(std::shared_ptr<aml::stmt_n::stmt_t>)~
+[T] #141   bool aml::aml_n::run(aml::aml_n::options_t&)~

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
 #include <deque>
-#include <variant>
 #include <regex>
+#include <string>
+#include <variant>
 
 #include "utils.h"
 
