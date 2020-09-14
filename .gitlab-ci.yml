@@ -1,30 +1,103 @@
-# This file is a template, and might need editing before it works on your project.
-# use the official gcc image, based on debian
-# can use verions as well, like gcc:5.2
-# see https://hub.docker.com/_/gcc/
 image: gcc
+
+
+
+stages:
+  - compile_deps
+  - build
+  - test
+
+
+
+fmt:
+  stage: compile_deps
+  script:
+    - apt update;
+      apt -y upgrade;
+      apt -y install cmake
+    - |
+      if [[ ! -d ./fmt ]]; then
+        git clone https://github.com/fmtlib/fmt.git ./fmt;
+        cmake -S ./fmt -B ./fmt/build -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE;
+        cmake --build ./fmt/build;
+      fi
+  cache:
+    paths:
+      - ./fmt
+  artifacts:
+    paths:
+      - ./fmt
+    expire_in: 1 day
+
+
+
+spdlog:
+  stage: compile_deps
+  script:
+    - apt update;
+      apt -y upgrade;
+      apt -y install cmake
+    - |
+      if [[ ! -d ./spdlog ]]; then
+        git clone https://github.com/gabime/spdlog.git ./spdlog;
+        cmake -S ./spdlog -B ./spdlog/build;
+        cmake --build ./spdlog/build;
+      fi
+  cache:
+    paths:
+      - ./spdlog
+  artifacts:
+    paths:
+      - ./spdlog
+    expire_in: 1 day
+
+
+
+catch2:
+  stage: compile_deps
+  script:
+    - apt update;
+      apt -y upgrade;
+      apt -y install cmake
+    - |
+      if [[ ! -d ./catch2 ]]; then
+        git clone https://github.com/catchorg/catch2.git ./catch2;
+        cmake -S ./catch2 -B ./catch2/build;
+        cmake --build ./catch2/build;
+      fi
+  cache:
+    paths:
+      - ./catch2
+  artifacts:
+    paths:
+      - ./catch2
+    expire_in: 1 day
+
+
 
 build:
   stage: build
-  # instead of calling g++ directly you can also use some build toolkit like make
-  # install the necessary build tools when needed
   before_script:
-    - apt update && apt -y upgrade && apt -y install cmake make g++10 libboost-program-options-dev
+    - apt update;
+      apt -y upgrade;
+      apt -y install cmake libboost-program-options-dev
+    - cmake --build ./fmt/build    --target install;
+    - cmake --build ./spdlog/build --target install;
+    - cmake --build ./catch2/build --target install;
   script:
     - cmake -S. -B./build && time cmake --build ./build
+  cache:
+    paths:
+      - ./build
   artifacts:
     paths:
-      - build/aml/aml
-      - build/aml/aml_tests
-      - build/aml/libaml.so
-      - resources/sample.aml
-      # depending on your build setup it's most likely a good idea to cache outputs to reduce the build time
-      # cache:
-      #   paths:
-      #     - "*.o"
+      - ./build
+    expire_in: 1 day
 
-# run tests using the binary built before
+
+
 test:
   stage: test
   script:
     - ./build/aml/aml_tests
+
