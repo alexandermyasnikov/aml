@@ -1,6 +1,7 @@
 #include "stmt.h"
 
 #include <filesystem>
+#include "logger.h"
 
 namespace aml::stmt_n {
 
@@ -70,27 +71,11 @@ namespace aml::stmt_n {
         case type_t::stmt_call:      body = stmt;           break; // TODO check
         case type_t::stmt_include:
         {
-          auto stmt_d = std::dynamic_pointer_cast<stmt_include_t>(stmt);
-          if (!stmt_d)
-            break;
-
-          if (options.files.contains(stmt_d->filename))
-            break;
-
-          options.files.insert(stmt_d->filename);
-
-          std::string code = utils_n::str_from_file(std::filesystem::path(options.wd) / stmt_d->filename);
-          if (code.empty())
-            break;
-
-          auto tokens  = token_n::process(code);
-          auto tree    = lisp_tree_n::process(tokens);
-          auto stmt    = parse(tree, env, {type_t::stmt_program}, options);
-          auto program = std::dynamic_pointer_cast<stmt_program_t>(stmt);
-          if (!program)
-            break;
-
-          funcs.insert(funcs.end(), program->funcs.begin(), program->funcs.end());
+          auto stmt_include = std::dynamic_pointer_cast<stmt_include_t>(stmt);
+          if (!stmt_include) break;
+          auto stmt_program = std::dynamic_pointer_cast<stmt_program_t>(stmt_include->body);
+          if (!stmt_program) break;
+          funcs.insert(funcs.end(), stmt_program->funcs.begin(), stmt_program->funcs.end());
           break;
         }
         default: throw syntax_error_t(node.node);
@@ -376,7 +361,7 @@ namespace aml::stmt_n {
 
 
 
-  bool stmt_include_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/, options_t& /*options*/) {
+  bool stmt_include_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 2) return false;
 
@@ -384,6 +369,21 @@ namespace aml::stmt_n {
     if (!check_type(tree.nodes[1], token_n::type_t::dq_string)) return false;
 
     filename = std::get<std::string>(tree.nodes[1].node.value);
+    body = factory(type_t::stmt_stub);
+
+
+    auto filename_abs = std::filesystem::path(options.wd) / filename;
+    AML_LOGGER(debug, "filename_abs: {}", filename_abs.string());
+
+    if (!options.files.contains(filename_abs)) {
+      options.files.insert(filename_abs);
+      auto wd = filename_abs.parent_path().string();
+
+      std::swap(wd, options.wd);
+      body = parse_file(env, options, filename_abs);
+      std::swap(wd, options.wd);
+    }
+
     return true;
   }
 
@@ -398,6 +398,19 @@ namespace aml::stmt_n {
   }
 
   void stmt_include_t::intermediate_code(code_n::code_ctx_t& /*code_ctx*/) const {
+  }
+
+  std::shared_ptr<stmt_t> stmt_include_t::parse_file(env_n::env_sptr_t env, options_t& options, const std::string& filename) {
+    std::string code = utils_n::str_from_file(filename);
+    AML_LOGGER(debug, "filename: {}", filename);
+    AML_LOGGER(debug, "code: \n{}", code);
+    if (code.empty())
+      return factory(type_t::stmt_stub);
+
+    auto tokens  = token_n::process(code);
+    auto tree    = lisp_tree_n::process(tokens);
+    auto stmt    = parse(tree, env, {type_t::stmt_program}, options);
+    return stmt;
   }
 
 

@@ -236,12 +236,14 @@ namespace aml::stmt_n {
 
 
   struct stmt_include_t : stmt_t {
-    std::string filename;
+    std::string             filename;
+    std::shared_ptr<stmt_t> body;
 
     bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
     type_t type() const override { return type_t::stmt_include; }
+    std::shared_ptr<stmt_t> parse_file(env_n::env_sptr_t env, options_t& options, const std::string& filename);
   };
 
 

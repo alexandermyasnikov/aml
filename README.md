@@ -3,7 +3,7 @@
 * Author: Alexander Myasnikov
 * mailto: myasnikov.alexander.s@gmail.com
 * git: https://gitlab.com/amyasnikov/aml
-* version: 0.6
+* version: 0.7
 
 
 
@@ -28,13 +28,23 @@ cmake -S. -B./build && cmake --build ./build -j8
 Компиляция исходного кода в байт-код:
 
 ```
-./build/aml/aml --cmd=compile --input=resources/sample.aml --output=resources/tmp.aml.binary
+./build/aml/aml \
+    --cmd=compile \
+    --file_input=aml_code/sample.aml \
+    --file_output=logs/sample.binary \
+    --log=logs/sample.compile.log \
+    --level=trace;
 ```
 
 Исполнение байт-кода:
 
 ```
-./build/aml/aml --cmd=exec --input=resources/tmp.aml.binary
+./build/aml/aml \
+    --cmd=execute \
+    --file_input=logs/sample.binary \
+    --file_output=logs/sample.result \
+    --log=logs/sample.execute.log \
+    --level=trace;
 ```
 
 
@@ -61,7 +71,9 @@ cmake -S. -B./build && cmake --build ./build -j8
 
 ### Пример кода:
 
-[Смотри sample.aml](resources/sample.aml)
+[sample.aml](aml_code/sample.aml)
+[standard.aml](aml_code/standard.aml)
+[standard](aml_code/standard)
 
 
 

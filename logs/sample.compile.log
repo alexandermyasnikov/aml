@@ -1,6 +1,7 @@
-[T] #141   bool aml::aml_n::run(aml::aml_n::options_t&)
-[T] #9       aml::token_n::tokens_t aml::aml_n::lexical_analyzer_n::process(const string&)
-[I] #12        process: source code:
+[T] #145   bool aml::aml_n::run(aml::aml_n::options_t&)
+[T] #99      bool aml::aml_n::compile(aml::aml_n::options_t&)
+[T] #9         aml::token_n::tokens_t aml::aml_n::lexical_analyzer_n::process(const string&)
+[I] #12          process: source code:
 ;  AML
 ;  Author: Alexander Myasnikov
 ;  mailto:myasnikov.alexander.s@gmail.com
@@ -9,7 +10,7 @@
 
 
 
-(#include "standard.aml")
+(#include "standard/standard.aml")
 
 
 
@@ -79,11 +80,11 @@
 
 
 
-[I] #13        process: tokens:
+[I] #13          process: tokens:
 token: 3	9:1:1	 '('
 token: 12	9:2:8	 '#include'
-token: 18	9:11:14	 '"standard.aml"'
-token: 4	9:25:1	 ')'
+token: 18	9:11:23	 '"standard/standard.aml"'
+token: 4	9:34:1	 ')'
 token: 3	13:1:1	 '('
 token: 8	13:2:4	 'defn'
 token: 17	13:7:6	 'square'
@@ -292,11 +293,11 @@ token: 16	74:8:3	 '105'
 token: 4	74:11:1	 ')'
 token: 4	74:12:1	 ')'
 
-[T] #9       aml::token_n::tokens_t aml::aml_n::lexical_analyzer_n::process(const string&)~
-[T] #20      aml::lisp_tree_n::lisp_tree_t aml::aml_n::syntax_lisp_analyzer_n::process(const tokens_t&)
-[I] #23        process: lisp tree:
+[T] #9         aml::token_n::tokens_t aml::aml_n::lexical_analyzer_n::process(const string&)~
+[T] #20        aml::lisp_tree_n::lisp_tree_t aml::aml_n::syntax_lisp_analyzer_n::process(const tokens_t&)
+[I] #23          process: lisp tree:
 ((#include
-  "standard.aml")
+  "standard/standard.aml")
 (defn
   square
   (call
@@ -394,299 +395,13 @@ token: 4	74:12:1	 ')'
     104)
   (int
     105)))
-[T] #20      aml::lisp_tree_n::lisp_tree_t aml::aml_n::syntax_lisp_analyzer_n::process(const tokens_t&)~
-[T] #30      std::shared_ptr<aml::stmt_n::stmt_t> aml::aml_n::syntax_analyzer_n::process(const aml::lisp_tree_n::lisp_tree_t&, const string&)
-[I] #34        process: stmt:
-(defn +
-  (syscall
-    (int 200)
-    (arg 1)
-    (arg 2)))
+[T] #20        aml::lisp_tree_n::lisp_tree_t aml::aml_n::syntax_lisp_analyzer_n::process(const tokens_t&)~
+[T] #30        std::shared_ptr<aml::stmt_n::stmt_t> aml::aml_n::syntax_analyzer_n::process(const aml::lisp_tree_n::lisp_tree_t&, const string&)
+[D] #376         parse_v: filename_abs: /mnt/code/cpp/aml/standard/standard.aml
+[D] #405         parse_file: filename: /mnt/code/cpp/aml/standard/standard.aml
+[D] #406         parse_file: code: 
 
-(defn -
-  (syscall
-    (int 201)
-    (arg 1)
-    (arg 2)))
-
-(defn *
-  (syscall
-    (int 202)
-    (arg 1)
-    (arg 2)))
-
-(defn /
-  (syscall
-    (int 203)
-    (arg 1)
-    (arg 2)))
-
-(defn !
-  (syscall
-    (int 100)
-    (arg 1)))
-
-(defn &&
-  (syscall
-    (int 206)
-    (arg 1)
-    (arg 2)))
-
-(defn ||
-  (syscall
-    (int 207)
-    (arg 1)
-    (arg 2)))
-
-(defn ==
-  (syscall
-    (int 204)
-    (arg 1)
-    (arg 2)))
-
-(defn <
-  (syscall
-    (int 205)
-    (arg 1)
-    (arg 2)))
-
-(defn !=
-  (call
-    (func !)
-    (call
-      (func ==)
-      (arg 1)
-      (arg 2))))
-
-(defn >
-  (call
-    (func !)
-    (call
-      (func ||)
-      (call
-        (func <)
-        (arg 1)
-        (arg 2))
-      (call
-        (func ==)
-        (arg 1)
-        (arg 2)))))
-
-(defn square
-  (call
-    (func *)
-    (arg 1)
-    (arg 2)))
-
-(defn perimeter
-  (call
-    (func *)
-    (int 2)
-    (call
-      (func +)
-      (arg 1)
-      (arg 2))))
-
-(defn product
-  (if
-    (call
-      (func >)
-      (arg 1)
-      (int 1))
-    (call
-      (func *)
-      (arg 1)
-      (call
-        (func product)
-        (call
-          (func -)
-          (arg 1)
-          (int 1))))
-    (int 1)))
-
-(defn test_1
-  (call
-    (func square)
-    (int 3)
-    (int 5)))
-
-(defn test_2
-  (call
-    (func perimeter)
-    (int 3)
-    (int 5)))
-
-(defn test_3
-  (call
-    (func product)
-    (int 5)))
-
-(defn test_4
-  (if
-    (int 1)
-    (arg 1)
-    (arg 1)))
-
-(call
-  (func test_3)
-  (int 101)
-  (int 102)
-  (int 103)
-  (int 104)
-  (int 105))
-
-
-[T] #30      std::shared_ptr<aml::stmt_n::stmt_t> aml::aml_n::syntax_analyzer_n::process(const aml::lisp_tree_n::lisp_tree_t&, const string&)~
-[T] #41      aml::code_n::code_ctx_t aml::aml_n::intermediate_code_generator_n::process(std::shared_ptr<aml::stmt_n::stmt_t>)
-[I] #45        process: intermediate code:
-0		arg_1b		5
-2		arg_1b		5
-4		push_2b		200
-7		push_1b		3
-9		syscall
-10		ret
-11		arg_1b		5
-13		arg_1b		5
-15		push_2b		201
-18		push_1b		3
-20		syscall
-21		ret
-22		arg_1b		5
-24		arg_1b		5
-26		push_2b		202
-29		push_1b		3
-31		syscall
-32		ret
-33		arg_1b		5
-35		arg_1b		5
-37		push_2b		203
-40		push_1b		3
-42		syscall
-43		ret
-44		arg_1b		4
-46		push_1b		100
-48		push_1b		2
-50		syscall
-51		ret
-52		arg_1b		5
-54		arg_1b		5
-56		push_2b		206
-59		push_1b		3
-61		syscall
-62		ret
-63		arg_1b		5
-65		arg_1b		5
-67		push_2b		207
-70		push_1b		3
-72		syscall
-73		ret
-74		arg_1b		5
-76		arg_1b		5
-78		push_2b		204
-81		push_1b		3
-83		syscall
-84		ret
-85		arg_1b		5
-87		arg_1b		5
-89		push_2b		205
-92		push_1b		3
-94		syscall
-95		ret
-96		push_1b		44
-98		push_1b		74
-100		arg_1b		7
-102		arg_1b		7
-104		push_1b		3
-106		call
-107		push_1b		2
-109		call
-110		ret
-111		push_1b		44
-113		push_1b		63
-115		push_1b		74
-117		arg_1b		8
-119		arg_1b		8
-121		push_1b		3
-123		call
-124		push_1b		85
-126		arg_1b		9
-128		arg_1b		9
-130		push_1b		3
-132		call
-133		push_1b		3
-135		call
-136		push_1b		2
-138		call
-139		ret
-140		push_1b		22
-142		arg_1b		6
-144		arg_1b		6
-146		push_1b		3
-148		call
-149		ret
-150		push_1b		22
-152		push_1b		0
-154		arg_1b		7
-156		arg_1b		7
-158		push_1b		3
-160		call
-161		push_1b		2
-163		push_1b		3
-165		call
-166		ret
-167		push_1b		111
-169		push_1b		1
-171		arg_1b		6
-173		push_1b		3
-175		call
-176		pop_jif		108
-185		push_1b		22
-187		push_2b		167
-190		push_1b		11
-192		push_1b		1
-194		arg_1b		8
-196		push_1b		3
-198		call
-199		push_1b		2
-201		call
-202		arg_1b		6
-204		push_1b		3
-206		call
-207		jmp		109
-216		push_1b		1
-218		ret
-219		push_2b		140
-222		push_1b		5
-224		push_1b		3
-226		push_1b		3
-228		call
-229		ret
-230		push_2b		150
-233		push_1b		5
-235		push_1b		3
-237		push_1b		3
-239		call
-240		ret
-241		push_2b		167
-244		push_1b		5
-246		push_1b		2
-248		call
-249		ret
-250		push_1b		1
-252		pop_jif		136
-261		arg_1b		4
-263		jmp		137
-272		arg_1b		4
-274		ret
-275		push_2b		241
-278		push_1b		105
-280		push_1b		104
-282		push_1b		103
-284		push_1b		102
-286		push_1b		101
-288		push_1b		6
-290		call
-291		exit
-
-[T] #41      aml::code_n::code_ctx_t aml::aml_n::intermediate_code_generator_n::process(std::shared_ptr<aml::stmt_n::stmt_t>)~
-[T] #141   bool aml::aml_n::run(aml::aml_n::options_t&)~
+[T] #30        std::shared_ptr<aml::stmt_n::stmt_t> aml::aml_n::syntax_analyzer_n::process(const aml::lisp_tree_n::lisp_tree_t&, const string&)~
+[E] #110       compile: exception: env_t: '*' is not exists
+[T] #99      bool aml::aml_n::compile(aml::aml_n::options_t&)~
+[T] #145   bool aml::aml_n::run(aml::aml_n::options_t&)~

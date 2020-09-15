@@ -81,6 +81,9 @@ namespace aml::aml_n {
   void options_t::preprocessing() {
     if (!file_input.empty())
       input = utils_n::str_from_file(file_input);
+    if (wd.empty() && file_input.empty()) {
+      wd = std::filesystem::path(file_input).parent_path().string();
+    }
   }
 
   void options_t::postprocessing() {
@@ -93,22 +96,23 @@ namespace aml::aml_n {
 
 
   bool compile(options_t& options) {
-    try {
-      options.preprocessing();
+    AML_TRACER;
+    options.preprocessing();
 
+    try {
       auto code      = options.input;
       auto tokens    = lexical_analyzer_n::process(code);
       auto lisp_tree = syntax_lisp_analyzer_n::process(tokens);
       auto stmt      = syntax_analyzer_n::process(lisp_tree, options.wd);
       auto code_ctx  = intermediate_code_generator_n::process(stmt);
       options.output = code_ctx.save();
-
-      options.postprocessing();
     } catch (const std::exception& ex) {
+      AML_LOGGER(err, "exception: {}", ex.what());
       options.errors = ex.what();
       return false;
     }
 
+    options.postprocessing();
     return true;
   }
 
@@ -116,21 +120,21 @@ namespace aml::aml_n {
 
   bool execute(options_t& options) {
     AML_TRACER;
-    try {
-      options.preprocessing();
+    options.preprocessing();
 
+    try {
       code_n::code_ctx_t code_ctx;
       auto code = options.input;
       code_ctx.load(code);
       auto output = executor_n::process(code_ctx);
-
       options.output = output;
-      options.postprocessing();
     } catch (const std::exception& ex) {
+      AML_LOGGER(err, "exception: {}", ex.what());
       options.errors = ex.what();
       return false;
     }
 
+    options.postprocessing();
     return true;
   }
 
