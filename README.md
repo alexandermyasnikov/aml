@@ -71,9 +71,9 @@ cmake -S. -B./build && cmake --build ./build -j8
 
 ### Пример кода:
 
-[sample.aml](aml_code/sample.aml)
-[standard.aml](aml_code/standard.aml)
-[standard](aml_code/standard)
+* [sample.aml](aml_code/sample.aml)
+* [standard.aml](aml_code/standard/standard.aml)
+* [standard](aml_code/standard)
 
 
 
