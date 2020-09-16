@@ -81,8 +81,10 @@ namespace aml::aml_n {
   void options_t::preprocessing() {
     if (!file_input.empty())
       input = utils_n::str_from_file(file_input);
-    if (wd.empty() && file_input.empty()) {
-      wd = std::filesystem::path(file_input).parent_path().string();
+    if (wd.empty()) {
+      wd = file_input.empty()
+        ? std::filesystem::current_path().string()
+        : std::filesystem::path(file_input).parent_path().string();
     }
   }
 

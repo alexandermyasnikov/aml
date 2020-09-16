@@ -57,7 +57,7 @@ namespace aml::aml_n {
     std::string file_input  = {};
     std::string input       = {};
     std::string output      = {};
-    std::string wd          = std::filesystem::current_path();
+    std::string wd          = {};
     std::string file_log    = {};
     std::string level       = {};
     std::string errors      = {};
