@@ -44,6 +44,6 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  return aml::aml_n::run(options);
+  return !aml::aml_n::run(options);
 }
 
