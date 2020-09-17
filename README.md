@@ -162,7 +162,11 @@ func:    DEFN    expr    expr
     arg
 
 (block expr1 expr2 ... exprN) ->
-    TODO
+    CODE(expr1)
+    CODE(expr2)
+    ...
+    CODE(exprN)
+    pop N
 
 (call expr_name expr1 expr2 ... exprN) ->
     CODE(expr_name)
@@ -239,6 +243,9 @@ call:
 
 jmp <label>:
   rip = <label>
+
+pop <digit>:
+  stack: <argN> ... <arg2> <argN> -> ... <argN>
 
 pop_jif <label>:
   stack: ... res -> ...

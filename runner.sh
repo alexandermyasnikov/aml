@@ -2,7 +2,7 @@
 
 for var in "$@"
 do
-  echo "$var"
+  echo "cmd: $var"
   case "$var" in
     "build")
       cmake -S. -B./build && cmake --build ./build -j6
@@ -19,6 +19,7 @@ do
       --file_output=logs/sample.binary \
       --log=logs/sample.compile.log \
       --level=trace;
+      echo "code: $?"
       ;;
 
     "sample_execute")
@@ -28,6 +29,7 @@ do
       --file_output=logs/sample.result \
       --log=logs/sample.execute.log \
       --level=trace;
+      echo "code: $?"
       cat logs/sample.result;
       ;;
 

@@ -61,6 +61,13 @@ AML_TEST("arg3", "300",
 
 
 
+AML_TEST("block1", "1",
+    "(defn test (block (int 1))) (call (func test) (int 100) (int 200) (int 300))")
+
+AML_TEST("block2", "2",
+    "(defn test (block (int 1) (int 2))) (call (func test) (int 100) (int 200) (int 300))")
+
+
 TEST_CASE("zigzag") {
   for (int64_t i{}; i < 1000; ++i) {
     int64_t a = aml::code_n::zigzag_encode(i);

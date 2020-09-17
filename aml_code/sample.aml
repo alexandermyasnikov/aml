@@ -2,7 +2,6 @@
 ;  Author: Alexander Myasnikov
 ;  mailto:myasnikov.alexander.s@gmail.com
 ;  git:https://gitlab.com/amyasnikov/aml
-;  version: 0.6
 
 
 
@@ -65,8 +64,18 @@
     (arg 1)
     (arg 1)))
 
+(defn test_5
+  (block
+    (int 100)
+    (int 101)
+    (int 102)
+    (int 103)
+    (int 104)))
+
+
+
 (call
-  (func test_3)
+  (func test_5)
   (int 101)
   (int 102)
   (int 103)

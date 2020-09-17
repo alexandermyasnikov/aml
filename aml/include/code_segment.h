@@ -29,6 +29,16 @@ namespace aml::code_n {
     // jmp_7b,
     // jmp_8b,
 
+    pop,
+    pop_1b,
+    pop_2b,
+    pop_3b,
+    pop_4b,
+    pop_5b,
+    pop_6b,
+    pop_7b,
+    pop_8b,
+
     pop_jif,
     // pop_jif_1b,
     // pop_jif_2b,

@@ -40,7 +40,7 @@ namespace aml::stmt_n {
   // expr:    SYSCALL    expr+
   // expr:    VAR        <name>
   // func:    DEFN       expr       expr
-  // include: INCLUDE    <dq_str>
+  // include: #INCLUDE   <dq_str>
 
 
 
@@ -73,7 +73,7 @@ namespace aml::stmt_n {
 
   static inline types_t types_expr = {
     type_t::stmt_arg,
-    // type_t::stmt_block,
+    type_t::stmt_block,
     type_t::stmt_call,
     // type_t::stmt_defvar,
     type_t::stmt_func,
@@ -157,22 +157,20 @@ namespace aml::stmt_n {
 
 
 
-#if 0
   struct stmt_block_t : stmt_t {
-    std::deque<std::shared_ptr<stmt_t>> exprs;
+    std::deque<std::shared_ptr<stmt_t>> args;
 
     bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
     type_t type() const override { return type_t::stmt_block; }
   };
-#endif
 
 
 
   struct stmt_call_t : stmt_t {
-    std::shared_ptr<stmt_t>              name;
-    std::vector<std::shared_ptr<stmt_t>> args;
+    std::shared_ptr<stmt_t>             name;
+    std::deque<std::shared_ptr<stmt_t>> args;
 
     bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) override;
     std::string show(size_t deep) const override;
