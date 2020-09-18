@@ -66,16 +66,29 @@
 
 (defn test_5
   (block
-    (int 100)
-    (int 101)
-    (int 102)
-    (int 103)
-    (int 104)))
+    (int -1000)
+    (int -4)
+    (int -3)
+    (int -2)
+    (int -1)
+    (int 0)
+    (int 1)
+    (int 2)
+    (int 3)
+    (int 4)
+    (int 5)
+    (int 6)))
+
+(defn test_6
+  (if
+    (int 1)
+    (int 1234567890123)
+    (int 12345)))
 
 
 
 (call
-  (func test_5)
+  (func test_6)
   (int 101)
   (int 102)
   (int 103)

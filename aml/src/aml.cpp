@@ -49,6 +49,7 @@ namespace aml::aml_n {
 
 
   std::string executor_n::process(const code_n::code_ctx_t& code_ctx) {
+    AML_TRACER;
     code_n::stack_t stack;
     stack.rip = code_ctx.rip;
     stack.rbp = {};

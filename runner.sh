@@ -18,8 +18,7 @@ do
       --file_input=aml_code/sample.aml \
       --file_output=logs/sample.binary \
       --log=logs/sample.compile.log \
-      --level=trace;
-      echo "code: $?"
+      --level=trace
       ;;
 
     "sample_execute")
@@ -28,9 +27,8 @@ do
       --file_input=logs/sample.binary \
       --file_output=logs/sample.result \
       --log=logs/sample.execute.log \
-      --level=trace;
-      echo "code: $?"
-      cat logs/sample.result;
+      --level=trace \
+      && cat logs/sample.result;
       ;;
 
     *)
@@ -38,6 +36,13 @@ do
       ;;
   esac
 
+  RC=$?
   echo ""
   date;
+  echo "code: $RC"
+
+  if [ $RC -ne 0 ]; then
+    exit $RC
+  fi
+
 done

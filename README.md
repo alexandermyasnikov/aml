@@ -3,7 +3,6 @@
 * Author: Alexander Myasnikov
 * mailto: myasnikov.alexander.s@gmail.com
 * git: https://gitlab.com/amyasnikov/aml
-* version: 0.7
 
 
 
@@ -242,14 +241,14 @@ call:
   rbp = stack.size
 
 jmp <label>:
-  rip = <label>
+  rip += <label>
 
 pop <digit>:
   stack: <argN> ... <arg2> <argN> -> ... <argN>
 
 pop_jif <label>:
   stack: ... res -> ...
-  rip = res ? <label> : rip
+  rip += res ? <label> : 0
 
 push8 <digit>:
   stack: ... -> ... <digit>

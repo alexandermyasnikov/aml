@@ -10,127 +10,91 @@ namespace aml::code_n {
 
 
 
-  size_t instruction_size(instruction_rpn_t cmd) {
-    switch (cmd) {
-      case instruction_rpn_t::arg:        return 8;
-      case instruction_rpn_t::arg_1b:     return 1;
-      case instruction_rpn_t::arg_2b:     return 2;
-      case instruction_rpn_t::arg_3b:     return 3;
-      case instruction_rpn_t::arg_4b:     return 4;
-      case instruction_rpn_t::arg_5b:     return 5;
-      case instruction_rpn_t::arg_6b:     return 6;
-      case instruction_rpn_t::arg_7b:     return 7;
-      case instruction_rpn_t::arg_8b:     return 8;
-
-      case instruction_rpn_t::jmp:        return 8;
-      // case instruction_rpn_t::jmp_1b:     return 1;
-      // case instruction_rpn_t::jmp_2b:     return 2;
-      // case instruction_rpn_t::jmp_3b:     return 3;
-      // case instruction_rpn_t::jmp_4b:     return 4;
-      // case instruction_rpn_t::jmp_5b:     return 5;
-      // case instruction_rpn_t::jmp_6b:     return 6;
-      // case instruction_rpn_t::jmp_7b:     return 7;
-      // case instruction_rpn_t::jmp_8b:     return 8;
-
-      case instruction_rpn_t::pop:    return 8;
-      case instruction_rpn_t::pop_1b: return 1;
-      case instruction_rpn_t::pop_2b: return 2;
-      case instruction_rpn_t::pop_3b: return 3;
-      case instruction_rpn_t::pop_4b: return 4;
-      case instruction_rpn_t::pop_5b: return 5;
-      case instruction_rpn_t::pop_6b: return 6;
-      case instruction_rpn_t::pop_7b: return 7;
-      case instruction_rpn_t::pop_8b: return 8;
-
-      case instruction_rpn_t::pop_jif:    return 8;
-      // case instruction_rpn_t::pop_jif_1b: return 1;
-      // case instruction_rpn_t::pop_jif_2b: return 2;
-      // case instruction_rpn_t::pop_jif_3b: return 3;
-      // case instruction_rpn_t::pop_jif_4b: return 4;
-      // case instruction_rpn_t::pop_jif_5b: return 5;
-      // case instruction_rpn_t::pop_jif_6b: return 6;
-      // case instruction_rpn_t::pop_jif_7b: return 7;
-      // case instruction_rpn_t::pop_jif_8b: return 8;
-
-      case instruction_rpn_t::push:       return 8;
-      case instruction_rpn_t::push_1b:    return 1;
-      case instruction_rpn_t::push_2b:    return 2;
-      case instruction_rpn_t::push_3b:    return 3;
-      case instruction_rpn_t::push_4b:    return 4;
-      case instruction_rpn_t::push_5b:    return 5;
-      case instruction_rpn_t::push_6b:    return 6;
-      case instruction_rpn_t::push_7b:    return 7;
-      case instruction_rpn_t::push_8b:    return 8;
-
-      case instruction_rpn_t::call:       return 0;
-      case instruction_rpn_t::exit:       return 0;
-      case instruction_rpn_t::ret:        return 0;
-      case instruction_rpn_t::syscall:    return 0;
-      default: return 0;
-    }
+  cmd_t::cmd_t(cmd_id_t cmd_id, int64_t value) {
+    bits.id  = static_cast<uint8_t>(cmd_id) & ((1 << 4) - 1);
+    bits.ext = {};
+    bits.len = {};
+    val = value;
   }
 
-  std::string show_instruction(instruction_rpn_t cmd) {
+  void cmd_t::encode() {
+    // id, val -> ext, len, val
+    AML_LOGGER(debug, "cmd before: {} {} {} {:08b} {} \t {}", bits.id, bits.ext, bits.len, cmd, val, show());
+    bits.ext = {};
+    bits.len = {};
+    switch (static_cast<cmd_id_t>(bits.id)) {
+      case cmd_id_t::arg:
+      case cmd_id_t::jmp:
+      case cmd_id_t::pop:
+      case cmd_id_t::pop_jif:
+      case cmd_id_t::push:
+      {
+        if (val >= -2 && val <= 5) {
+          bits.ext = 1;
+          bits.len = (val - -2) & ((1 << 3) - 1);
+        } else {
+          val = zigzag_encode(val);
+          bits.len = (zigzag_size(val) - 1) & ((1 << 3) - 1);
+        }
+        break;
+      }
+      case cmd_id_t::call:
+      case cmd_id_t::exit:
+      case cmd_id_t::ret:
+      case cmd_id_t::syscall:
+      {
+        break;
+      }
+      default:
+      {
+        AML_LOGGER(err, "unknown cmd: {} {}", static_cast<uint8_t>(bits.id), show());
+        break;
+      }
+    }
+    AML_LOGGER(debug, "cmd after:  {} {} {} {:08b} {} \t {}", bits.id, bits.ext, bits.len, cmd, val, show());
+  }
+
+  void cmd_t::decode() {
+    // id, ext, len, value -> value
+    AML_LOGGER(debug, "cmd before: {} {:02x} {:08b} {}", static_cast<size_t>(bits.id), bits.id, cmd, val);
+    if (bits.ext) {
+      val = bits.len + -2;
+    } else {
+      val = zigzag_decode(val);
+    }
+    AML_LOGGER(debug, "cmd after:  {} {:02x} {:08b} {}", static_cast<size_t>(bits.id), bits.id, cmd, val);
+  }
+
+  std::string cmd_t::show() const {
     std::string str;
-    switch (cmd) {
-      case instruction_rpn_t::arg:     str += "arg";       break;
-      case instruction_rpn_t::arg_1b:  str += "arg_1b";    break;
-      case instruction_rpn_t::arg_2b:  str += "arg_2b";    break;
-      case instruction_rpn_t::arg_3b:  str += "arg_3b";    break;
-      case instruction_rpn_t::arg_4b:  str += "arg_4b";    break;
-      case instruction_rpn_t::arg_5b:  str += "arg_5b";    break;
-      case instruction_rpn_t::arg_6b:  str += "arg_6b";    break;
-      case instruction_rpn_t::arg_7b:  str += "arg_7b";    break;
-      case instruction_rpn_t::arg_8b:  str += "arg_8b";    break;
-
-      case instruction_rpn_t::pop:     str += "pop";     break;
-      case instruction_rpn_t::pop_1b:  str += "pop_1b";  break;
-      case instruction_rpn_t::pop_2b:  str += "pop_2b";  break;
-      case instruction_rpn_t::pop_3b:  str += "pop_3b";  break;
-      case instruction_rpn_t::pop_4b:  str += "pop_4b";  break;
-      case instruction_rpn_t::pop_5b:  str += "pop_5b";  break;
-      case instruction_rpn_t::pop_6b:  str += "pop_6b";  break;
-      case instruction_rpn_t::pop_7b:  str += "pop_7b";  break;
-      case instruction_rpn_t::pop_8b:  str += "pop_8b";  break;
-
-      case instruction_rpn_t::pop_jif: str += "pop_jif";   break;
-      // case instruction_rpn_t::pop_jif_1b:  str += "pop_jif_1b";  break;
-      // case instruction_rpn_t::pop_jif_2b:  str += "pop_jif_2b";  break;
-      // case instruction_rpn_t::pop_jif_3b:  str += "pop_jif_3b";  break;
-      // case instruction_rpn_t::pop_jif_4b:  str += "pop_jif_4b";  break;
-      // case instruction_rpn_t::pop_jif_5b:  str += "pop_jif_5b";  break;
-      // case instruction_rpn_t::pop_jif_6b:  str += "pop_jif_6b";  break;
-      // case instruction_rpn_t::pop_jif_7b:  str += "pop_jif_7b";  break;
-      // case instruction_rpn_t::pop_jif_8b:  str += "pop_jif_8b";  break;
-
-      case instruction_rpn_t::push:     str += "push";     break;
-      case instruction_rpn_t::push_1b:  str += "push_1b";  break;
-      case instruction_rpn_t::push_2b:  str += "push_2b";  break;
-      case instruction_rpn_t::push_3b:  str += "push_3b";  break;
-      case instruction_rpn_t::push_4b:  str += "push_4b";  break;
-      case instruction_rpn_t::push_5b:  str += "push_5b";  break;
-      case instruction_rpn_t::push_6b:  str += "push_6b";  break;
-      case instruction_rpn_t::push_7b:  str += "push_7b";  break;
-      case instruction_rpn_t::push_8b:  str += "push_8b";  break;
-
-      case instruction_rpn_t::jmp:     str += "jmp";       break;
-      // case instruction_rpn_t::jmp_1b:  str += "jmp_1b";  break;
-      // case instruction_rpn_t::jmp_2b:  str += "jmp_2b";  break;
-      // case instruction_rpn_t::jmp_3b:  str += "jmp_3b";  break;
-      // case instruction_rpn_t::jmp_4b:  str += "jmp_4b";  break;
-      // case instruction_rpn_t::jmp_5b:  str += "jmp_5b";  break;
-      // case instruction_rpn_t::jmp_6b:  str += "jmp_6b";  break;
-      // case instruction_rpn_t::jmp_7b:  str += "jmp_7b";  break;
-      // case instruction_rpn_t::jmp_8b:  str += "jmp_8b";  break;
-
-      case instruction_rpn_t::call:    str += "call";      break;
-      case instruction_rpn_t::exit:    str += "exit";      break;
-      case instruction_rpn_t::ret:     str += "ret";       break;
-      case instruction_rpn_t::syscall: str += "syscall";   break;
-      default: str += "(unknown)";
+    switch (static_cast<cmd_id_t>(bits.id)) {
+      case cmd_id_t::arg:     str += "arg";       break;
+      case cmd_id_t::call:    str += "call";      break;
+      case cmd_id_t::exit:    str += "exit";      break;
+      case cmd_id_t::jmp:     str += "jmp";       break;
+      case cmd_id_t::pop_jif: str += "pop_jif";   break;
+      case cmd_id_t::pop:     str += "pop";       break;
+      case cmd_id_t::push:    str += "push";      break;
+      case cmd_id_t::ret:     str += "ret";       break;
+      case cmd_id_t::syscall: str += "syscall";   break;
+      default: str += "unknown";
+    }
+    switch (static_cast<cmd_id_t>(bits.id)) {
+      case cmd_id_t::arg:     str += " " + std::to_string(val); break;
+      case cmd_id_t::call:                                      break;
+      case cmd_id_t::exit:                                      break;
+      case cmd_id_t::jmp:     str += " " + std::to_string(val); break;
+      case cmd_id_t::pop_jif: str += " " + std::to_string(val); break;
+      case cmd_id_t::pop:     str += " " + std::to_string(val); break;
+      case cmd_id_t::push:    str += " " + std::to_string(val); break;
+      case cmd_id_t::ret:                                       break;
+      case cmd_id_t::syscall:                                   break;
+      default: str += " unknown";
     }
     return str;
   }
+
+
 
   int64_t zigzag_encode(int64_t value) {
     return (value << 1) ^ (value >> (8 * sizeof(int64_t) - 1));
@@ -176,38 +140,12 @@ namespace aml::code_n {
     }
   }
 
-  void code_t::write_cmd(instruction_rpn_t cmd, int64_t value) {
-    switch (cmd) {
-      case instruction_rpn_t::arg:
-      case instruction_rpn_t::pop:
-      case instruction_rpn_t::push:
-      {
-        auto value_new = zigzag_encode(value);
-        auto size      = zigzag_size(value_new);
-        write_u8(static_cast<uint8_t>(cmd) + size);
-        write_int(value_new, size);
-        break;
-      }
-      case instruction_rpn_t::jmp:
-      case instruction_rpn_t::pop_jif:
-      {
-        write_u8(static_cast<uint8_t>(cmd));
-        write_i64(value);
-        break;
-      }
-      case instruction_rpn_t::call:
-      case instruction_rpn_t::exit:
-      case instruction_rpn_t::ret:
-      case instruction_rpn_t::syscall:
-      {
-        write_u8(static_cast<uint8_t>(cmd));
-        break;
-      }
-      default:
-      {
-        AML_LOGGER(err, "unknown cmd: {} {} {}", static_cast<size_t>(cmd), show_instruction(cmd), value);
-        break;
-      }
+  void code_t::write_cmd(cmd_t cmd) {
+    cmd.encode();
+    AML_LOGGER(debug, "cmd: {} {:08b} {} \t {}", static_cast<size_t>(cmd.bits.id), cmd.cmd, cmd.val, cmd.show());
+    write_u8(cmd.cmd);
+    if (!cmd.bits.ext) {
+      write_int(cmd.val, cmd.bits.len + 1);
     }
   }
 
@@ -240,8 +178,18 @@ namespace aml::code_n {
       v <<= 8 *i;
       ret |= v;
     }
-    ret = zigzag_decode(ret);
     return ret;
+  }
+
+  cmd_t code_t::read_cmd(size_t& pos) const {
+    cmd_t cmd = {};
+    cmd.cmd = read_u8(pos);
+    if (!cmd.bits.ext) {
+      cmd.val = read_int(pos, cmd.bits.len + 1);
+    }
+    cmd.decode();
+    AML_LOGGER(debug, "cmd: {} {:08b} {} \t {}", static_cast<size_t>(cmd.bits.id), cmd.cmd, cmd.val, cmd.show());
+    return cmd;
   }
 
   std::string code_t::show() const {
@@ -249,20 +197,8 @@ namespace aml::code_n {
     size_t rip = {};
     while (rip < buffer.size()) {
       str += std::to_string(rip) + "\t\t";
-      auto cmd = static_cast<instruction_rpn_t>(read_u8(rip));
-      str += show_instruction(cmd);
-      switch (instruction_size(cmd)) {
-        case 1: str += "\t\t" + std::to_string(read_int(rip, 1)); break;
-        case 2: str += "\t\t" + std::to_string(read_int(rip, 2)); break;
-        case 3: str += "\t\t" + std::to_string(read_int(rip, 3)); break;
-        case 4: str += "\t\t" + std::to_string(read_int(rip, 4)); break;
-        case 5: str += "\t\t" + std::to_string(read_int(rip, 5)); break;
-        case 6: str += "\t\t" + std::to_string(read_int(rip, 6)); break;
-        case 7: str += "\t\t" + std::to_string(read_int(rip, 7)); break;
-        case 8: str += "\t\t" + std::to_string(read_int(rip, 8)); break;
-        case 0: break;
-        default: str += " (unknown)";
-      }
+      cmd_t cmd = read_cmd(rip);
+      str += cmd.show();
       str += "\n";
     }
     return str;
@@ -297,55 +233,25 @@ namespace aml::code_n {
 
 
   bool stack_t::step(const code_t& code) {
-    auto cmd = static_cast<code_n::instruction_rpn_t>(code.read_u8(rip));
+    AML_TRACER;
+    auto cmd = code.read_cmd(rip);
+    AML_LOGGER(debug, "cmd:  {}", cmd.show());
+    AML_LOGGER(debug, "size: {}", size());
+    AML_LOGGER(debug, "rip:  {}", rip);
+    AML_LOGGER(debug, "rbp:  {}", rbp);
 
     if (size() > 1000)
       throw utils_n::fatal_error_t("too big stack");
 
-    switch (cmd) {
-      case code_n::instruction_rpn_t::exit: return false;
-
-      case code_n::instruction_rpn_t::arg_1b: {
-        int64_t value = code.read_int(rip, 1);
-        push_back(get(size() - value));
+    switch (static_cast<cmd_id_t>(cmd.bits.id)) {
+      case cmd_id_t::arg:
+      {
+        push_back(get(size() - cmd.val));
         break;
+      }
 
-      } case code_n::instruction_rpn_t::arg_2b: {
-        int64_t value = code.read_int(rip, 2);
-        push_back(get(size() - value));
-        break;
-
-      } case code_n::instruction_rpn_t::arg_3b: {
-        int64_t value = code.read_int(rip, 3);
-        push_back(get(size() - value));
-        break;
-
-      } case code_n::instruction_rpn_t::arg_4b: {
-        int64_t value = code.read_int(rip, 4);
-        push_back(get(size() - value));
-        break;
-
-      } case code_n::instruction_rpn_t::arg_5b: {
-        int64_t value = code.read_int(rip, 5);
-        push_back(get(size() - value));
-        break;
-
-      } case code_n::instruction_rpn_t::arg_6b: {
-        int64_t value = code.read_int(rip, 6);
-        push_back(get(size() - value));
-        break;
-
-      } case code_n::instruction_rpn_t::arg_7b: {
-        int64_t value = code.read_int(rip, 7);
-        push_back(get(size() - value));
-        break;
-
-      } case code_n::instruction_rpn_t::arg_8b: {
-        int64_t value = code.read_int(rip, 8);
-        push_back(get(size() - value));
-        break;
-
-      } case code_n::instruction_rpn_t::call: {
+      case cmd_id_t::call:
+      {
         size_t arg_count = back();
         int64_t rip_new = get(size() - 1 - arg_count);
 
@@ -354,140 +260,49 @@ namespace aml::code_n {
         rbp = size() - 1/*rbp*/ - 1/*rip*/;
         rip = rip_new;
         break;
+      }
 
-      } case code_n::instruction_rpn_t::jmp: {
-        int64_t rip_new = code.read_i64(rip);
-        rip = rip_new;
+      case cmd_id_t::exit:
+      {
+        return false;
+      }
+
+      case cmd_id_t::jmp:
+      {
+        rip += cmd.val;
         break;
+      }
 
-      } case code_n::instruction_rpn_t::pop_1b: {
-        int64_t value = code.read_int(rip, 1);
+      case cmd_id_t::pop:
+      {
         int64_t ret = back();
-        for (int64_t i{}; i < value; ++i) {
+        for (int64_t i{}; i < cmd.val; ++i) {
           pop_back();
         }
         push_back(ret);
         break;
+      }
 
-      } case code_n::instruction_rpn_t::pop_2b: {
-        int64_t value = code.read_int(rip, 2);
-        int64_t ret = back();
-        for (int64_t i{}; i < value; ++i) {
-          pop_back();
-        }
-        push_back(ret);
-        break;
-
-      } case code_n::instruction_rpn_t::pop_3b: {
-        int64_t value = code.read_int(rip, 3);
-        int64_t ret = back();
-        for (int64_t i{}; i < value; ++i) {
-          pop_back();
-        }
-        push_back(ret);
-        break;
-
-      } case code_n::instruction_rpn_t::pop_4b: {
-        int64_t value = code.read_int(rip, 4);
-        int64_t ret = back();
-        for (int64_t i{}; i < value; ++i) {
-          pop_back();
-        }
-        push_back(ret);
-        break;
-
-      } case code_n::instruction_rpn_t::pop_5b: {
-        int64_t value = code.read_int(rip, 5);
-        int64_t ret = back();
-        for (int64_t i{}; i < value; ++i) {
-          pop_back();
-        }
-        push_back(ret);
-        break;
-
-      } case code_n::instruction_rpn_t::pop_6b: {
-        int64_t value = code.read_int(rip, 6);
-        int64_t ret = back();
-        for (int64_t i{}; i < value; ++i) {
-          pop_back();
-        }
-        push_back(ret);
-        break;
-
-      } case code_n::instruction_rpn_t::pop_7b: {
-        int64_t value = code.read_int(rip, 7);
-        int64_t ret = back();
-        for (int64_t i{}; i < value; ++i) {
-          pop_back();
-        }
-        push_back(ret);
-        break;
-
-      } case code_n::instruction_rpn_t::pop_8b: {
-        int64_t value = code.read_int(rip, 8);
-        int64_t ret = back();
-        for (int64_t i{}; i < value; ++i) {
-          pop_back();
-        }
-        push_back(ret);
-        break;
-
-      } case code_n::instruction_rpn_t::pop_jif: {
+      case cmd_id_t::pop_jif:
+      {
+        int64_t offset = cmd.val;
         int64_t ret = back();
         pop_back();
-        int64_t rip_new = code.read_i64(rip);
 
         if (!ret) {
-          rip = rip_new;
+          rip += offset;
         }
         break;
+      }
 
-      } case code_n::instruction_rpn_t::push: {
-        int64_t value = code.read_i64(rip);
-        push_back(value);
+      case cmd_id_t::push:
+      {
+        push_back(cmd.val);
         break;
+      }
 
-      } case code_n::instruction_rpn_t::push_1b: {
-        int64_t value = code.read_int(rip, 1);
-        push_back(value);
-        break;
-
-      } case code_n::instruction_rpn_t::push_2b: {
-        int64_t value = code.read_int(rip, 2);
-        push_back(value);
-        break;
-
-      } case code_n::instruction_rpn_t::push_3b: {
-        int64_t value = code.read_int(rip, 3);
-        push_back(value);
-        break;
-
-      } case code_n::instruction_rpn_t::push_4b: {
-        int64_t value = code.read_int(rip, 4);
-        push_back(value);
-        break;
-
-      } case code_n::instruction_rpn_t::push_5b: {
-        int64_t value = code.read_int(rip, 5);
-        push_back(value);
-        break;
-
-      } case code_n::instruction_rpn_t::push_6b: {
-        int64_t value = code.read_int(rip, 6);
-        push_back(value);
-        break;
-
-      } case code_n::instruction_rpn_t::push_7b: {
-        int64_t value = code.read_int(rip, 7);
-        push_back(value);
-        break;
-
-      } case code_n::instruction_rpn_t::push_8b: {
-        int64_t value = code.read_int(rip, 8);
-        push_back(value);
-        break;
-
-      } case code_n::instruction_rpn_t::ret: {
+      case cmd_id_t::ret:
+      {
         int64_t ret = back();
         pop_back();
 
@@ -506,8 +321,10 @@ namespace aml::code_n {
 
         push_back(ret);
         break;
+      }
 
-      } case code_n::instruction_rpn_t::syscall: {
+      case cmd_id_t::syscall:
+      {
         size_t arg_count = back();
         pop_back();
 
@@ -555,9 +372,11 @@ namespace aml::code_n {
 
         push_back(ret);
         break;
+      }
 
-      } default: {
-        AML_LOGGER(err, "unknown cmd: {} {}", static_cast<size_t>(cmd), show_instruction(cmd));
+      default:
+      {
+        AML_LOGGER(err, "unknown cmd: {} {}", static_cast<uint8_t>(cmd.bits.id), cmd.show());
         break;
       }
     }

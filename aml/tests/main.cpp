@@ -69,7 +69,7 @@ AML_TEST("block2", "2",
 
 
 TEST_CASE("zigzag") {
-  for (int64_t i{}; i < 1000; ++i) {
+  for (int64_t i = -1000; i < 1000; ++i) {
     int64_t a = aml::code_n::zigzag_encode(i);
     int64_t b = aml::code_n::zigzag_decode(a);
     REQUIRE(i == b);

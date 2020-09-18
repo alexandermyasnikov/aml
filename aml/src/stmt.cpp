@@ -12,6 +12,7 @@ namespace aml::stmt_n {
 
 
   std::shared_ptr<stmt_t> stmt_t::factory(type_t type) {
+    AML_TRACER;
     switch (type) {
       case type_t::stmt_stub:    return std::make_shared<stmt_stub_t>();    break;
       case type_t::stmt_program: return std::make_shared<stmt_program_t>(); break;
@@ -32,6 +33,7 @@ namespace aml::stmt_n {
 
   std::shared_ptr<stmt_t> stmt_t::parse(const lisp_tree_n::lisp_tree_t& tree,
       env_n::env_sptr_t env, const types_t& types, options_t& options) {
+    AML_TRACER;
 
     for (const auto type : types) {
       auto stmt = factory(type);
@@ -45,6 +47,7 @@ namespace aml::stmt_n {
 
 
   bool stmt_stub_t::parse_v(const lisp_tree_n::lisp_tree_t& /*tree*/, env_n::env_sptr_t /*env*/, options_t& /*options*/) {
+    AML_TRACER;
     return false;
   }
 
@@ -53,11 +56,13 @@ namespace aml::stmt_n {
   }
 
   void stmt_stub_t::intermediate_code(code_n::code_ctx_t& /*code_ctx*/) const {
+    AML_TRACER;
   }
 
 
 
   bool stmt_program_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
 
     env = env ? env : std::make_shared<env_n::env_t>(env);
@@ -98,18 +103,20 @@ namespace aml::stmt_n {
   }
 
   void stmt_program_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
+    AML_TRACER;
     for (const auto& func : funcs) {
       func->intermediate_code(code_ctx);
     }
     code_ctx.rip = code_ctx.code.buffer.size();
     // DEBUG_LOGGER_ICG("rip start: %d", code_ctx.rip);
     body->intermediate_code(code_ctx);
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::exit);
+    code_ctx.code.write_cmd({code_n::cmd_id_t::exit});
   }
 
 
 
   bool stmt_arg_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/, options_t& /*options*/) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() < 2) return false;
 
@@ -131,13 +138,15 @@ namespace aml::stmt_n {
   }
 
   void stmt_arg_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::arg, code_ctx.rsp + value + 1/*rbp*/ + 1/*rip*/ + 1);
+    AML_TRACER;
+    code_ctx.code.write_cmd({code_n::cmd_id_t::arg, static_cast<int64_t>(code_ctx.rsp + value + 1/*rbp*/ + 1/*rip*/ + 1)});
     code_ctx.rsp++;
   }
 
 
 
   bool stmt_block_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() < 2) return false;
 
@@ -165,16 +174,18 @@ namespace aml::stmt_n {
   }
 
   void stmt_block_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
+    AML_TRACER;
     for (const auto& arg : args) {
       arg->intermediate_code(code_ctx);
     }
 
-    code_ctx.code.write_cmd((code_n::instruction_rpn_t::pop), args.size());
+    code_ctx.code.write_cmd({code_n::cmd_id_t::pop, static_cast<int64_t>(args.size())});
   }
 
 
 
   bool stmt_call_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() < 2) return false;
 
@@ -205,15 +216,16 @@ namespace aml::stmt_n {
   }
 
   void stmt_call_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
+    AML_TRACER;
     name->intermediate_code(code_ctx);
 
     for (const auto& arg : args | std::views::reverse) {
       arg->intermediate_code(code_ctx);
     }
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::push, args.size() + 1);
+    code_ctx.code.write_cmd({code_n::cmd_id_t::push, static_cast<int64_t>(args.size() + 1)});
     code_ctx.rsp++;
 
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::call);
+    code_ctx.code.write_cmd({code_n::cmd_id_t::call});
     code_ctx.rsp -= 1/*<count>*/ + (args.size() + 1);
     code_ctx.rsp += 1/*<return>*/;
   }
@@ -221,6 +233,7 @@ namespace aml::stmt_n {
 
 
   bool stmt_defn_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 3) return false;
 
@@ -248,10 +261,11 @@ namespace aml::stmt_n {
   }
 
   void stmt_defn_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
+    AML_TRACER;
     var->offset = code_ctx.code.buffer.size();
     // DEBUG_LOGGER_ICG("name: %s \t %d", var->name.c_str(), var->offset);
     body->intermediate_code(code_ctx);
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::ret);
+    code_ctx.code.write_cmd({code_n::cmd_id_t::ret});
     code_ctx.rsp = {};
   }
 
@@ -287,6 +301,7 @@ namespace aml::stmt_n {
 
 
   bool stmt_func_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& /*options*/) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 2) return false;
 
@@ -308,13 +323,15 @@ namespace aml::stmt_n {
   }
 
   void stmt_func_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::push, var->offset);
+    AML_TRACER;
+    code_ctx.code.write_cmd({code_n::cmd_id_t::push, static_cast<int64_t>(var->offset)});
     code_ctx.rsp++;
   }
 
 
 
   bool stmt_if_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 4) return false;
 
@@ -344,28 +361,43 @@ namespace aml::stmt_n {
   }
 
   void stmt_if_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
+    AML_TRACER;
+
+    size_t size_then = {};
+    size_t size_else = {};
+
+    {
+      code_n::code_ctx_t code_ctx_tmp = {};
+      expr_else->intermediate_code(code_ctx_tmp);
+      size_else = code_ctx_tmp.code.buffer.size();
+      AML_LOGGER(debug, "size_else: {}", size_else);
+    }
+
+    {
+      code_n::code_ctx_t code_ctx_tmp = {};
+      expr_then->intermediate_code(code_ctx_tmp);
+      size_then = code_ctx_tmp.code.buffer.size();
+      AML_LOGGER(debug, "size_then: {}", size_then);
+    }
+
+    {
+      code_n::cmd_t cmd = {code_n::cmd_id_t::jmp, static_cast<int64_t>(size_else)};
+      cmd.encode();
+      size_then += 1/*cmd*/ + (cmd.bits.ext ? 0 : cmd.bits.len + 1);
+      AML_LOGGER(debug, "size_then: {}", size_then);
+    }
+
     expr_if->intermediate_code(code_ctx);
-
-    size_t m1 = code_ctx.code.buffer.size() + sizeof(uint8_t);
-    code_ctx.code.write_cmd((code_n::instruction_rpn_t::pop_jif), {});
-    code_ctx.rsp--;
-
+    code_ctx.code.write_cmd({code_n::cmd_id_t::pop_jif, static_cast<int64_t>(size_then)});
     expr_then->intermediate_code(code_ctx);
-
-    size_t m2 = code_ctx.code.buffer.size() + sizeof(uint8_t);
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::jmp, {});
-    code_ctx.rsp--;
-
-    code_ctx.code.write_i64(code_ctx.code.buffer.size(), m1);
-
+    code_ctx.code.write_cmd({code_n::cmd_id_t::jmp, static_cast<int64_t>(size_else)});
     expr_else->intermediate_code(code_ctx);
-
-    code_ctx.code.write_i64(code_ctx.code.buffer.size(), m2);
   }
 
 
 
   bool stmt_include_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 2) return false;
 
@@ -402,9 +434,11 @@ namespace aml::stmt_n {
   }
 
   void stmt_include_t::intermediate_code(code_n::code_ctx_t& /*code_ctx*/) const {
+    AML_TRACER;
   }
 
   std::shared_ptr<stmt_t> stmt_include_t::parse_file(env_n::env_sptr_t env, options_t& options, const std::string& filename) {
+    AML_TRACER;
     std::string code = utils_n::str_from_file(filename);
     AML_LOGGER(debug, "filename: {}", filename);
     AML_LOGGER(debug, "code:\n{}", code);
@@ -420,6 +454,7 @@ namespace aml::stmt_n {
 
 
   bool stmt_int_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t /*env*/, options_t& /*options*/) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() != 2) return false;
 
@@ -441,13 +476,15 @@ namespace aml::stmt_n {
   }
 
   void stmt_int_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::push, value);
+    AML_TRACER;
+    code_ctx.code.write_cmd({code_n::cmd_id_t::push, value});
     code_ctx.rsp++;
   }
 
 
 
   bool stmt_syscall_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
+    AML_TRACER;
     if (tree.is_leaf()) return false;
     if (tree.nodes.size() < 3) return false;
 
@@ -474,13 +511,14 @@ namespace aml::stmt_n {
   }
 
   void stmt_syscall_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
+    AML_TRACER;
     for (const auto& arg : args | std::views::reverse) {
       arg->intermediate_code(code_ctx);
     }
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::push, static_cast<int64_t>(args.size()));
+    code_ctx.code.write_cmd({code_n::cmd_id_t::push, static_cast<int64_t>(args.size())});
     code_ctx.rsp++;
 
-    code_ctx.code.write_cmd(code_n::instruction_rpn_t::syscall);
+    code_ctx.code.write_cmd({code_n::cmd_id_t::syscall});
     code_ctx.rsp -= 1/*<count>*/ + args.size();
     code_ctx.rsp += 1/*<return>*/;
     code_ctx.rsp += 1/*<rbp>*/ + 1/*<rip>*/;
