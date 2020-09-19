@@ -28,6 +28,7 @@ namespace aml::code_n {
       case cmd_id_t::pop:
       case cmd_id_t::pop_jif:
       case cmd_id_t::push:
+      case cmd_id_t::var:
       {
         if (val >= -2 && val <= 5) {
           bits.ext = 1;
@@ -68,15 +69,16 @@ namespace aml::code_n {
   std::string cmd_t::show() const {
     std::string str;
     switch (static_cast<cmd_id_t>(bits.id)) {
-      case cmd_id_t::arg:     str += "arg";       break;
-      case cmd_id_t::call:    str += "call";      break;
-      case cmd_id_t::exit:    str += "exit";      break;
-      case cmd_id_t::jmp:     str += "jmp";       break;
-      case cmd_id_t::pop_jif: str += "pop_jif";   break;
-      case cmd_id_t::pop:     str += "pop";       break;
-      case cmd_id_t::push:    str += "push";      break;
-      case cmd_id_t::ret:     str += "ret";       break;
-      case cmd_id_t::syscall: str += "syscall";   break;
+      case cmd_id_t::arg:     str += "arg";     break;
+      case cmd_id_t::call:    str += "call";    break;
+      case cmd_id_t::exit:    str += "exit";    break;
+      case cmd_id_t::jmp:     str += "jmp";     break;
+      case cmd_id_t::pop_jif: str += "pop_jif"; break;
+      case cmd_id_t::pop:     str += "pop";     break;
+      case cmd_id_t::push:    str += "push";    break;
+      case cmd_id_t::ret:     str += "ret";     break;
+      case cmd_id_t::syscall: str += "syscall"; break;
+      case cmd_id_t::var:     str += "var";     break;
       default: str += "unknown";
     }
     switch (static_cast<cmd_id_t>(bits.id)) {
@@ -89,6 +91,7 @@ namespace aml::code_n {
       case cmd_id_t::push:    str += " " + std::to_string(val); break;
       case cmd_id_t::ret:                                       break;
       case cmd_id_t::syscall:                                   break;
+      case cmd_id_t::var:     str += " " + std::to_string(val); break;
       default: str += " unknown";
     }
     return str;
@@ -371,6 +374,12 @@ namespace aml::code_n {
         }
 
         push_back(ret);
+        break;
+      }
+
+      case cmd_id_t::var:
+      {
+        push_back(get(rbp + 1/*rbp*/ + 1/*rip*/ + cmd.val));
         break;
       }
 

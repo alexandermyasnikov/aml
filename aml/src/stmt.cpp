@@ -22,13 +22,13 @@ namespace aml::stmt_n {
       case type_t::stmt_call:    return std::make_shared<stmt_call_t>();    break;
       case type_t::stmt_block:   return std::make_shared<stmt_block_t>();   break;
       case type_t::stmt_defn:    return std::make_shared<stmt_defn_t>();    break;
-      // case type_t::stmt_defvar:  return std::make_shared<stmt_defvar_t>();  break;
+      case type_t::stmt_defvar:  return std::make_shared<stmt_defvar_t>();  break;
       case type_t::stmt_func:    return std::make_shared<stmt_func_t>();    break;
       case type_t::stmt_if:      return std::make_shared<stmt_if_t>();      break;
       case type_t::stmt_include: return std::make_shared<stmt_include_t>(); break;
       case type_t::stmt_int:     return std::make_shared<stmt_int_t>();     break;
       case type_t::stmt_syscall: return std::make_shared<stmt_syscall_t>(); break;
-      // case type_t::stmt_var:     return std::make_shared<stmt_var_t>();     break;
+      case type_t::stmt_var:     return std::make_shared<stmt_var_t>();     break;
       default:                   throw utils_n::fatal_error_t("unknown type_t " + std::to_string(static_cast<size_t>(type)));
     }
   }
@@ -67,8 +67,7 @@ namespace aml::stmt_n {
     AML_TRACER;
     if (tree.is_leaf()) return false;
 
-    env = env ? env : std::make_shared<env_n::env_t>(env);
-    this->env = env;
+    env  = env ? env : std::make_shared<env_n::env_t>(env);
     body = factory(type_t::stmt_stub);
 
     for (const auto& node : tree.nodes) {
@@ -154,9 +153,9 @@ namespace aml::stmt_n {
 
     if (!check_type(tree.nodes[0], token_n::type_t::key_block)) return false;
 
-    auto env_block = std::make_shared<env_n::env_t>(env);
+    env = std::make_shared<env_n::env_t>(env);
     for (const auto& node : tree.nodes | std::views::drop(1)) {
-      auto stmt = parse(node, env_block, types_expr, options);
+      auto stmt = parse(node, env, types_expr, options);
       args.push_back(stmt);
     }
     return true;
@@ -242,10 +241,11 @@ namespace aml::stmt_n {
     if (!check_type(tree.nodes[0], token_n::type_t::key_defn)) return false;
     if (!check_type(tree.nodes[1], token_n::type_t::ident)) return false;
 
-    this->env = env;
+
     var = env->def_func(std::get<std::string>(tree.nodes[1].node.value));
+    AML_LOGGER(debug, "env:\n{}", env->show());
+    env = std::make_shared<env_n::env_t>(env);
     body = parse(tree.nodes[2], env, types_expr, options);
-    AML_LOGGER(debug, "env:\n{}", this->env->show());
     return true;
   }
 
@@ -273,32 +273,38 @@ namespace aml::stmt_n {
 
 
 
-#if 0
-  stmt_defvar_t::stmt_defvar_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) {
-    check_not_leaf(tree);
-    check_size_gt(tree, 2);
-    check_type(tree.nodes[0], token_n::type_t::key_var);
-    check_type(tree.nodes[1], token_n::type_t::ident);
+  bool stmt_defvar_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) {
+    AML_TRACER;
+    if (tree.is_leaf()) return false;
+    if (tree.nodes.size() != 3) return false;
+
+    if (!check_type(tree.nodes[0], token_n::type_t::key_defvar)) return false;
+    if (!check_type(tree.nodes[1], token_n::type_t::ident)) return false;
 
     var = env->def_var(std::get<std::string>(tree.nodes[1].node.value));
-    body = std::make_shared<stmt_expr_t>(tree.nodes[2], env);
-    // env TODO
+    AML_LOGGER(debug, "env:\n{}", env->show());
+    body = parse(tree.nodes[2], env, types_expr, options);
+    return true;
   }
 
-  std::string stmt_defvar_t::show(size_t /*deep*/) const {
+  std::string stmt_defvar_t::show(size_t deep) const {
     std::string str;
     str += token_n::token_t{.type = token_n::type_t::lp}.show();
-    str += token_n::token_t{.type = token_n::type_t::key_var}.show();
+    str += token_n::token_t{.type = token_n::type_t::key_defvar}.show();
     str += token_n::token_t{.type = token_n::type_t::whitespace}.show();
     str += var->name;
+    str += token_n::token_t{.type = token_n::type_t::new_line}.show();
+    str += utils_n::indent(deep);
+    str += body->show(deep + 1);
     str += token_n::token_t{.type = token_n::type_t::rp}.show();
     return str;
   }
 
-  void stmt_defvar_t::intermediate_code(code_n::code_ctx_t& /*code_ctx*/) const {
-    throw utils_n::fatal_error_t("TODO defvar");
+  void stmt_defvar_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
+    var->offset = code_ctx.rsp;
+    AML_LOGGER(debug, "name: {} {}", var->name, var->offset);
+    body->intermediate_code(code_ctx);
   }
-#endif
 
 
 
@@ -423,7 +429,6 @@ namespace aml::stmt_n {
       body = parse_file(env, options, filename_abs);
       std::swap(filename, options.filename);
     }
-
     return true;
   }
 
@@ -530,14 +535,17 @@ namespace aml::stmt_n {
 
 
 
-#if 0
-  stmt_var_t::stmt_var_t(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env) {
-    check_not_leaf(tree);
-    check_size_gt(tree, 2);
-    check_type(tree.nodes[0], token_n::type_t::key_var);
-    check_type(tree.nodes[1], token_n::type_t::ident);
+  bool stmt_var_t::parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& /*options*/) {
+    AML_TRACER;
+    if (tree.is_leaf()) return false;
+    if (tree.nodes.size() != 2) return false;
 
-    var = env->def_var(std::get<std::string>(tree.nodes[1].node.value));
+    if (!check_type(tree.nodes[0], token_n::type_t::key_var)) return false;
+    if (!check_type(tree.nodes[1], token_n::type_t::ident)) return false;
+
+    var = env->get_var(std::get<std::string>(tree.nodes[1].node.value));
+    AML_LOGGER(debug, "env:\n{}", env->show());
+    return true;
   }
 
   std::string stmt_var_t::show(size_t /*deep*/) const {
@@ -550,8 +558,10 @@ namespace aml::stmt_n {
     return str;
   }
 
-  void stmt_var_t::intermediate_code(code_n::code_ctx_t& /*code_ctx*/) const {
-    throw utils_n::fatal_error_t("TODO var");
+  void stmt_var_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
+    AML_TRACER;
+    AML_LOGGER(debug, "name: {} {}", var->name, var->offset);
+    code_ctx.code.write_cmd({code_n::cmd_id_t::var, static_cast<int64_t>(var->offset)});
+    code_ctx.rsp++;
   }
-#endif
 }

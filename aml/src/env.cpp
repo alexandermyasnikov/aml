@@ -2,9 +2,6 @@
 #include "utils.h"
 
 namespace aml::env_n {
-  namespace utils_n = aml::utils_n;
-
-
 
   std::string var_info_t::show() const {
     return std::to_string(id) + "\t'" + name + "'\t" + std::to_string(offset);
@@ -18,10 +15,10 @@ namespace aml::env_n {
     size_t deep = {};
     while (env) {
       for (const auto& func : env->funcs) {
-        str += "; func: " + utils_n::indent(deep) + func->show() + "\n";
+        str += std::to_string(deep) + " func: " + utils_n::indent(deep) + func->show() + "\n";
       }
       for (const auto& var : env->vars) {
-        str += "; var:  " + utils_n::indent(deep) + var->show() + "\n";
+        str += std::to_string(deep) + " var:  " + utils_n::indent(deep) + var->show() + "\n";
       }
       env = env->parent;
       deep++;

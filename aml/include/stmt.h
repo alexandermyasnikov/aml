@@ -75,12 +75,12 @@ namespace aml::stmt_n {
     type_t::stmt_arg,
     type_t::stmt_block,
     type_t::stmt_call,
-    // type_t::stmt_defvar,
+    type_t::stmt_defvar,
     type_t::stmt_func,
     type_t::stmt_if,
     type_t::stmt_int,
     type_t::stmt_syscall,
-    // type_t::stmt_var,
+    type_t::stmt_var,
   };
 
 
@@ -132,9 +132,7 @@ namespace aml::stmt_n {
   struct stmt_program_t : stmt_t {
     using funcs_t = std::deque<std::shared_ptr<stmt_t>>;
     using body_t  = std::shared_ptr<stmt_t>;
-    using env_t   = std::shared_ptr<env_n::env_t>;
 
-    env_t   env;
     funcs_t funcs;
     body_t  body;
 
@@ -183,7 +181,6 @@ namespace aml::stmt_n {
   struct stmt_defn_t : stmt_t {
     env_n::var_info_sptr_t  var;
     std::shared_ptr<stmt_t> body;
-    env_n::env_sptr_t       env;
 
     bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) override;
     std::string show(size_t deep) const override;
@@ -193,24 +190,20 @@ namespace aml::stmt_n {
 
 
 
-#if 0
   struct stmt_defvar_t : stmt_t {
     env_n::var_info_sptr_t  var;
     std::shared_ptr<stmt_t> body;
-    env_n::env_sptr_t       env;
 
     bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) override;
     std::string show(size_t deep) const override;
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
     type_t type() const override { return type_t::stmt_defvar; }
   };
-#endif
 
 
 
   struct stmt_func_t : stmt_t {
     env_n::var_info_sptr_t var;
-    env_n::env_sptr_t      env;
 
     bool parse_v(const lisp_tree_n::lisp_tree_t& tree, env_n::env_sptr_t env, options_t& options) override;
     std::string show(size_t deep) const override;
@@ -268,7 +261,6 @@ namespace aml::stmt_n {
 
 
 
-#if 0
   struct stmt_var_t : stmt_t {
     env_n::var_info_sptr_t var;
 
@@ -277,5 +269,4 @@ namespace aml::stmt_n {
     void intermediate_code(code_n::code_ctx_t& code_ctx) const override;
     type_t type() const override { return type_t::stmt_var; }
   };
-#endif
 }

@@ -16,6 +16,7 @@ namespace aml::code_n {
     push,
     ret,
     syscall,
+    var,
   };
 
 

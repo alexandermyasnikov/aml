@@ -85,10 +85,26 @@
     (int 1234567890123)
     (int 12345)))
 
+(defn test_7
+  (block
+    (int 100)
+    (int 101)
+    (defvar a
+      (int 10))
+    (defvar b
+      (int 11))
+    (defvar c
+      (var a))
+    (defvar d
+      (var a))
+    (defvar e
+      (var a))
+    (var e)))
+
 
 
 (call
-  (func test_6)
+  (func test_7)
   (int 101)
   (int 102)
   (int 103)

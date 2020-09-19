@@ -68,6 +68,24 @@ AML_TEST("block2", "2",
     "(defn test (block (int 1) (int 2))) (call (func test) (int 100) (int 200) (int 300))")
 
 
+
+AML_TEST("var1", "12",
+    "(defn test (block (defvar a (int 12)))) (call (func test))")
+
+AML_TEST("var2", "12",
+    "(defn test (block (defvar a (int 12)) (var a))) (call (func test))")
+
+AML_TEST("var3", "10",
+    "(defn test (block (defvar a (int 10)) (defvar b (int 11)) (defvar c (int 12)) (var a))) (call (func test))")
+
+AML_TEST("var4", "11",
+    "(defn test (block (defvar a (int 10)) (defvar b (int 11)) (defvar c (int 12)) (var b))) (call (func test))")
+
+AML_TEST("var5", "12",
+    "(defn test (block (defvar a (int 10)) (defvar b (int 11)) (defvar c (int 12)) (var c))) (call (func test))")
+
+
+
 TEST_CASE("zigzag") {
   for (int64_t i = -1000; i < 1000; ++i) {
     int64_t a = aml::code_n::zigzag_encode(i);
