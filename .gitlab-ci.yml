@@ -27,7 +27,7 @@ fmt:
   artifacts:
     paths:
       - ./fmt
-    expire_in: 1 day
+    expire_in: 1 week
 
 
 
@@ -49,7 +49,7 @@ spdlog:
   artifacts:
     paths:
       - ./spdlog
-    expire_in: 1 day
+    expire_in: 1 week
 
 
 
@@ -71,7 +71,7 @@ catch2:
   artifacts:
     paths:
       - ./catch2
-    expire_in: 1 day
+    expire_in: 1 week
 
 
 
@@ -85,19 +85,19 @@ build:
     - cmake --build ./spdlog/build --target install;
     - cmake --build ./catch2/build --target install;
   script:
-    - cmake -S. -B./build && time cmake --build ./build
+    - cmake -S. -B./build && cmake --build ./build
   cache:
     paths:
       - ./build
   artifacts:
     paths:
       - ./build
-    expire_in: 1 day
+    expire_in: 1 week
 
 
 
 test:
   stage: test
   script:
-    - ./build/aml/aml_tests
+    - ./build/aml_tests
 

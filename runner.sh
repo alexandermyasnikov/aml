@@ -5,24 +5,26 @@ do
   echo "cmd: $var"
   case "$var" in
     "build")
-      cmake -S. -B./build && cmake --build ./build -j6
+      cmake -S. -B./build \
+        && cmake --build ./build -j6 \
+        && cmake --build ./build --target test
       ;;
 
     "tests")
-      ./build/aml/aml_tests
+      ./build/aml_tests
       ;;
 
     "sample_compile")
-      ./build/aml/aml \
+      ./build/aml \
       --cmd=compile \
-      --file_input=aml_code/sample.aml \
+      --file_input=aml/sample.aml \
       --file_output=logs/sample.binary \
       --log=logs/sample.compile.log \
       --level=trace
       ;;
 
     "sample_execute")
-      ./build/aml/aml \
+      ./build/aml \
       --cmd=execute \
       --file_input=logs/sample.binary \
       --file_output=logs/sample.result \

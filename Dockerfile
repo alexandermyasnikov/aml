@@ -26,4 +26,4 @@ COPY . /aml
 RUN rm -rf /aml/build
 RUN cd /aml && cmake -S. -B./build && cmake --build ./build
 
-CMD cd /aml && ./build/aml/aml_tests
+CMD cd /aml && cmake --build ./build --target test
