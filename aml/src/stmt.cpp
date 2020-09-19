@@ -108,7 +108,7 @@ namespace aml::stmt_n {
       func->intermediate_code(code_ctx);
     }
     code_ctx.rip = code_ctx.code.buffer.size();
-    // DEBUG_LOGGER_ICG("rip start: %d", code_ctx.rip);
+    AML_LOGGER(debug, "rip start: {}", code_ctx.rip);
     body->intermediate_code(code_ctx);
     code_ctx.code.write_cmd({code_n::cmd_id_t::exit});
   }
@@ -243,7 +243,7 @@ namespace aml::stmt_n {
     this->env = env;
     var = env->def_func(std::get<std::string>(tree.nodes[1].node.value));
     body = parse(tree.nodes[2], env, types_expr, options);
-    // DEBUG_LOGGER_SA("env: \n%s", this->env->show().c_str());
+    AML_LOGGER(debug, "env:\n{}", this->env->show());
     return true;
   }
 
@@ -263,7 +263,7 @@ namespace aml::stmt_n {
   void stmt_defn_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
     AML_TRACER;
     var->offset = code_ctx.code.buffer.size();
-    // DEBUG_LOGGER_ICG("name: %s \t %d", var->name.c_str(), var->offset);
+    AML_LOGGER(debug, "name: {} {}", var->name, var->offset);
     body->intermediate_code(code_ctx);
     code_ctx.code.write_cmd({code_n::cmd_id_t::ret});
     code_ctx.rsp = {};
@@ -324,6 +324,7 @@ namespace aml::stmt_n {
 
   void stmt_func_t::intermediate_code(code_n::code_ctx_t& code_ctx) const {
     AML_TRACER;
+    AML_LOGGER(debug, "name: {} {}", var->name, var->offset);
     code_ctx.code.write_cmd({code_n::cmd_id_t::push, static_cast<int64_t>(var->offset)});
     code_ctx.rsp++;
   }
@@ -408,16 +409,17 @@ namespace aml::stmt_n {
     body = factory(type_t::stmt_stub);
 
 
-    auto filename_abs = std::filesystem::path(options.wd) / filename;
-    AML_LOGGER(debug, "filename_abs: {}", filename_abs.string());
+    auto filename_abs = std::filesystem::path(options.filename).parent_path() / filename;
+    AML_LOGGER(debug, "filename current: {}", options.filename);
+    AML_LOGGER(debug, "filename new: {}", filename_abs.string());
 
     if (!options.files.contains(filename_abs)) {
       options.files.insert(filename_abs);
-      auto wd = filename_abs.parent_path().string();
+      auto filename = filename_abs.string();
 
-      std::swap(wd, options.wd);
+      std::swap(filename, options.filename);
       body = parse_file(env, options, filename_abs);
-      std::swap(wd, options.wd);
+      std::swap(filename, options.filename);
     }
 
     return true;

@@ -15,7 +15,7 @@ bool parse(aml::aml_n::options_t& options, int argc, char* argv[]) {
       ("cmd",         value(&options.cmd),         "Availible commands \"compile\" and \"execute\"")
       ("log",         value(&options.file_log),    "Write verbose output to file. Stdout is used if file is -")
       ("level",       value(&options.level),       "Log levels: \"trace\", \"debug\", \"info\", \"warning\", \"error\", \"critical\" \"off\"")
-      ("wd",          value(&options.wd),          "Current working directory")
+      ("filename",    value(&options.filename),    "Filename used if file_input not set.")
       ;
 
     variables_map vm;

@@ -20,7 +20,7 @@ namespace aml::aml_n {
 
 
   namespace syntax_analyzer_n {
-    std::shared_ptr<stmt_n::stmt_t> process(const lisp_tree_n::lisp_tree_t& tree, const std::string& wd);
+    std::shared_ptr<stmt_n::stmt_t> process(const lisp_tree_n::lisp_tree_t& tree, const std::string& filename);
   }
 
 
@@ -57,7 +57,7 @@ namespace aml::aml_n {
     std::string file_input  = {};
     std::string input       = {};
     std::string output      = {};
-    std::string wd          = {};
+    std::string filename    = {};
     std::string file_log    = {};
     std::string level       = {};
     std::string errors      = {};

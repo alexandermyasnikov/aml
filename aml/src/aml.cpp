@@ -26,9 +26,9 @@ namespace aml::aml_n {
 
 
 
-  std::shared_ptr<stmt_n::stmt_t> syntax_analyzer_n::process(const lisp_tree_n::lisp_tree_t& tree, const std::string& wd) {
+  std::shared_ptr<stmt_n::stmt_t> syntax_analyzer_n::process(const lisp_tree_n::lisp_tree_t& tree, const std::string& filename) {
     AML_TRACER;
-    auto options = stmt_n::options_t{.wd = wd};
+    auto options = stmt_n::options_t{.filename = filename};
     auto stmt = stmt_n::stmt_t::parse(tree, nullptr, {stmt_n::type_t::stmt_program}, options);
 
     AML_LOGGER(info, "stmt:\n{}", stmt->show({}));
@@ -73,7 +73,7 @@ namespace aml::aml_n {
     ss << "file_output: " << file_output << std::endl;
     ss << "input:       " << input       << std::endl;
     ss << "output:      " << output      << std::endl;
-    ss << "wd:          " << wd          << std::endl;
+    ss << "filename:    " << filename    << std::endl;
     ss << "file_log:    " << file_log    << std::endl;
     ss << "cmd:         " << cmd         << std::endl;
     return ss.str();
@@ -82,10 +82,10 @@ namespace aml::aml_n {
   void options_t::preprocessing() {
     if (!file_input.empty())
       input = utils_n::str_from_file(file_input);
-    if (wd.empty()) {
-      wd = file_input.empty()
-        ? std::filesystem::current_path().string()
-        : std::filesystem::path(file_input).parent_path().string();
+    if (filename.empty()) {
+      filename = !file_input.empty()
+        ? file_input
+        : (std::filesystem::current_path() / "tmp.aml").string();
     }
   }
 
@@ -106,7 +106,7 @@ namespace aml::aml_n {
       auto code      = options.input;
       auto tokens    = lexical_analyzer_n::process(code);
       auto lisp_tree = syntax_lisp_analyzer_n::process(tokens);
-      auto stmt      = syntax_analyzer_n::process(lisp_tree, options.wd);
+      auto stmt      = syntax_analyzer_n::process(lisp_tree, options.filename);
       auto code_ctx  = intermediate_code_generator_n::process(stmt);
       options.output = code_ctx.save();
     } catch (const std::exception& ex) {

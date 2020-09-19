@@ -101,8 +101,8 @@ namespace aml::stmt_n {
 
 
   struct options_t {
-    std::string           wd    = {};
-    std::set<std::string> files = {};
+    std::string           filename = {};
+    std::set<std::string> files    = {};
   };
 
 
