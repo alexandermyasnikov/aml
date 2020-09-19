@@ -150,7 +150,7 @@ func:    DEFN    expr    expr
 * exit
 * jmp
 * pop_jif
-* push8
+* push
 * ret
 * syscall
 
@@ -173,14 +173,14 @@ func:    DEFN    expr    expr
     ...
     CODE(expr2)
     CODE(expr1)
-    push8 N
+    push N
     call
 
 (defvar <name>) ->
-    TODO
+    ;
 
 (func <name>) ->
-    push8 <offset>
+    push <offset>
 
 (if expr_if expr_then expr_else) ->
     CODE(expr_if)
@@ -191,7 +191,7 @@ M1: CODE(expr_else)
 M2:
 
 (int <digit>) ->
-    push8 <digit>
+    push <digit>
 
 (defn <name> expr_body) ->
     CODE(expr_body)
@@ -202,11 +202,11 @@ M2:
     ...
     CODE(expr2)
     CODE(expr1)
-    push8 N
+    push N
     syscall
 
 (var <name>) ->
-    push8 <offset>
+    var <offset>
 ```
 
 
@@ -250,7 +250,7 @@ pop_jif <label>:
   stack: ... res -> ...
   rip += res ? <label> : 0
 
-push8 <digit>:
+push <digit>:
   stack: ... -> ... <digit>
 
 ret:
@@ -260,6 +260,9 @@ ret:
 
 syscall:
   stack: <argN> ... <arg2> <arg1> <N> -> <ret>
+
+var <offset>:
+  stack: ... -> ... MEMORY[rbp + offset]
 ```
 
 
@@ -278,12 +281,12 @@ syscall:
 (deffunc main
   (call sum
     (call sum
-      (INT 10)
-      (INT 11)
-      (INT 12))
+      (int 10)
+      (int 11)
+      (int 12))
     (call sum
-      (INT 20)
-      (INT 21))))
+      (int 20)
+      (int 21))))
 
 (call main)
 
