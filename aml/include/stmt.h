@@ -18,7 +18,7 @@ namespace aml::stmt_n {
 
 
   struct syntax_error_t : utils_n::fatal_error_t {
-    syntax_error_t(const token_n::token_t& token, token_n::type_t type = token_n::type_t::unknown);
+    syntax_error_t(const std::string& filename, const token_n::token_t& token);
   };
 
 

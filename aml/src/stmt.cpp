@@ -1,13 +1,15 @@
 #include "stmt.h"
 
 #include <filesystem>
+
 #include "logger.h"
 
 namespace aml::stmt_n {
 
-  syntax_error_t::syntax_error_t(const token_n::token_t& token, token_n::type_t type)
-    : utils_n::fatal_error_t("synax error at or near '" + token.lexeme + "' at '" + token.pos.show() + "'"
-        + (token_n::token_t{.type = type}.is_primary() ? ", expected '" + token_n::token_t{.type = type}.show() + "'" : "")) { }
+  syntax_error_t::syntax_error_t(const std::string& filename, const token_n::token_t& token)
+    : utils_n::fatal_error_t("synax error in '" + filename
+        + "' at or near '" + token.lexeme
+        + "' at '" + token.pos.show() + "'") { }
 
 
 
@@ -41,7 +43,7 @@ namespace aml::stmt_n {
         return stmt;
     }
 
-    throw syntax_error_t(tree.node);
+    throw syntax_error_t(options.filename, tree.node);
   }
 
 
@@ -83,7 +85,7 @@ namespace aml::stmt_n {
           funcs.insert(funcs.end(), stmt_program->funcs.begin(), stmt_program->funcs.end());
           break;
         }
-        default: throw syntax_error_t(node.node);
+        default: throw syntax_error_t(options.filename, node.node);
       }
     }
     return true;
