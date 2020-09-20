@@ -7,6 +7,7 @@ do
     "build")
       cmake -S. -B./build \
         && cmake --build ./build -j6 \
+        && cmake --build ./build --target package \
         && cmake --build ./build --target test
       ;;
 
@@ -15,7 +16,7 @@ do
       ;;
 
     "sample_compile")
-      ./build/aml \
+      ./build/amlc \
       --cmd=compile \
       --file_input=aml/sample.aml \
       --file_output=logs/sample.binary \
@@ -24,7 +25,7 @@ do
       ;;
 
     "sample_execute")
-      ./build/aml \
+      ./build/amlc \
       --cmd=execute \
       --file_input=logs/sample.binary \
       --file_output=logs/sample.result \
