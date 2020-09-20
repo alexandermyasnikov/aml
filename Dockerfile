@@ -23,7 +23,11 @@ RUN git clone https://github.com/catchorg/Catch2.git \
   && cmake --build ./build --target install
 
 COPY . /aml
-RUN rm -rf /aml/build
-RUN cd /aml && cmake -S. -B./build && cmake --build ./build
 
-CMD cd /aml && cmake --build ./build --target test
+WORKDIR /aml
+
+RUN rm -rf ./build
+RUN cmake -S. -B./build \
+  && cmake --build ./build
+
+ENTRYPOINT ["./build/aml"]
