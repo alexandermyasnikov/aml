@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(aml_project LANGUAGES CXX)
+project(aml_compiler
+  VERSION 0.7
+  LANGUAGES CXX)
 
 
 
 file(GLOB SRCFILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
-file(GLOB HDRFILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+file(GLOB_RECURSE HDRFILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*")
 
 
 
@@ -31,7 +33,8 @@ set(FLAGS
   -Wredundant-decls
   )
 
-
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS program_options REQUIRED)
@@ -40,17 +43,16 @@ find_package(fmt REQUIRED)
 
 
 
-add_library(aml_lib SHARED ${SRCFILES})
-target_compile_options(aml_lib PUBLIC ${FLAGS})
-target_include_directories(aml_lib PUBLIC include)
-set_target_properties(aml_lib PROPERTIES OUTPUT_NAME aml CXX_STANDARD 20 PUBLIC_HEADER "${HDRFILES}")
-target_link_libraries(aml_lib fmt::fmt)
+add_library(aml SHARED ${SRCFILES})
+target_compile_options(aml PUBLIC ${FLAGS})
+target_include_directories(aml PUBLIC ${CMAKE_SOURCE_DIR}/include)
+set_target_properties(aml PROPERTIES PUBLIC_HEADER "${HDRFILES}")
+target_link_libraries(aml fmt::fmt)
 
 
 
 add_executable(amlc main.cpp)
-target_link_libraries(amlc PUBLIC ${Boost_LIBRARIES} aml_lib)
-set_target_properties(amlc PROPERTIES CXX_STANDARD 20)
+target_link_libraries(amlc PUBLIC ${Boost_LIBRARIES} aml)
 # target_include_directories(amlc PUBLIC ${CMAKE_SOURCE_DIR}/3rdparty)
 
 
@@ -60,17 +62,16 @@ include(Catch)
 enable_testing()
 
 add_executable(aml_tests test/main.cpp)
-set_property(TARGET aml_tests PROPERTY CXX_STANDARD 20)
-target_link_libraries(aml_tests aml_lib)
+target_link_libraries(aml_tests aml)
 catch_discover_tests(aml_tests WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-
-
-install(TARGETS aml_lib amlc aml_tests
-  PUBLIC_HEADER DESTINATION usr/include/aml/cpp
+install(TARGETS aml amlc aml_tests
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION bin ${CMAKE_INSTALL_BINDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/amlc
   )
-install(DIRECTORY aml/ DESTINATION usr/include/aml)
+install(DIRECTORY aml/standard DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/amlc/aml)
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Alexander Mysnikov")
-SET(CPACK_GENERATOR "DEB" "RPM" "TBZ2" "7Z")
+SET(CPACK_GENERATOR "${AML_PACKAGE_TYPE}")
 INCLUDE(CPack)
 

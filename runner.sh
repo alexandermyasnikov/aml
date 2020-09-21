@@ -4,6 +4,26 @@ for var in "$@"
 do
   echo "cmd: $var"
   case "$var" in
+    "docker")
+      export IMAGE_TAG=aml_tmp
+      #export IMAGE_TAG_STAB=aml_stab
+      export IMAGE_TAG_LATEST=aml_latest
+
+      # docker pull $IMAGE_TAG_STAB   || true
+      # docker pull $IMAGE_TAG_LATEST || true
+      docker build --build-arg JOBS=4 --tag $IMAGE_TAG .
+      # docker push $IMAGE_TAG
+
+      # docker pull $IMAGE_TAG
+      docker run --entrypoint aml_tests $IMAGE_TAG
+
+      # docker pull $IMAGE_TAG
+      docker tag  $IMAGE_TAG $IMAGE_TAG_LATEST
+      # docker push $IMAGE_TAG_LATEST
+
+      echo "deploy TODO"
+      ;;
+
     "build")
       cmake -S. -B./build \
         && cmake --build ./build -j6 \

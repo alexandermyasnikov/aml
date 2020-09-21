@@ -29,7 +29,7 @@ test:
   stage: test
   script:
     - docker pull $IMAGE_TAG
-    - docker run --entrypoint ./build/aml_tests $IMAGE_TAG
+    - docker run --entrypoint aml_tests $IMAGE_TAG
 
 release:
   stage: release
