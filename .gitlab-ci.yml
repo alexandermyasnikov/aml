@@ -39,9 +39,17 @@ test_manual:
     - echo "IP=${DEPLOY_IP}"
     - echo "URL=$DEPLOY_URL"
     - echo "VERSION=$DEPLOY_VERSION"
+    - echo $DYNAMIC_ENV_VAR
     - docker pull $IMAGE_TAG
     - docker run --entrypoint aml_tests $IMAGE_TAG
   when: manual
+  variables:
+    DYNAMIC_ENV_VAR: $(whoami)
+  environment:
+    name: $DYNAMIC_ENV_VAR
+    url: http://$DYNAMIC_ENV_VAR.example.com
+
+
 
 release:
   stage: release
@@ -49,6 +57,16 @@ release:
     - docker pull $IMAGE_TAG
     - docker tag  $IMAGE_TAG $IMAGE_TAG_LATEST
     - docker push $IMAGE_TAG_LATEST
+
+deploy:one:
+  stage: deploy
+  script:
+    - echo "Hello CI one"
+
+deploy:two:
+  stage: deploy
+  script:
+    - echo "Hello CI two"
 
 deploy_staging:
   stage: deploy
