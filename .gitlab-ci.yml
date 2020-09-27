@@ -2,6 +2,7 @@ variables:
   IMAGE_TAG:        $CI_REGISTRY/$CI_PROJECT_PATH/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
   IMAGE_TAG_LATEST: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_COMMIT_REF_NAME:latest
   IMAGE_TAG_STAB:   $CI_REGISTRY/$CI_DEFAULT_BRANCH:latest
+  DEPLOY_URL:       "https://aml.amyasnikov.pro"
 
 stages:
   - build
@@ -38,8 +39,19 @@ release:
     - docker tag  $IMAGE_TAG $IMAGE_TAG_LATEST
     - docker push $IMAGE_TAG_LATEST
 
-deploy:
+deploy_staging:
   stage: deploy
   script:
     - echo "deploy TODO"
+
+deploy_prod:
+  stage: deploy
+  script:
+    - echo "deploy_prod TODO"
+    - echo "IP: $DEPLOY_IP"
+    - echo "URL: $DEPLOY_URL"
+    - echo "VERSION: $DEPLOY_VERSION"
+    - echo "IMAGE_TAG: $IMAGE_TAG"
+    - echo "IMAGE_TAG_LATEST: $IMAGE_TAG_LATEST"
+  when: manual
 
