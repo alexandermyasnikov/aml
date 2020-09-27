@@ -48,7 +48,7 @@ deploy_prod:
   stage: deploy
   script:
     - echo "deploy_prod TODO"
-      - echo "IP: $DEPLOY_IP"
+      - echo "IP: ${DEPLOY_IP}"
       #- echo "URL: $DEPLOY_URL"
       #- echo "VERSION: $DEPLOY_VERSION"
       #- echo "IMAGE_TAG: $IMAGE_TAG"
