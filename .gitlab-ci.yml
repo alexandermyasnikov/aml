@@ -48,10 +48,10 @@ deploy_prod:
   stage: deploy
   script:
     - echo "deploy_prod TODO"
-    - echo "IP: $DEPLOY_IP"
-    - echo "URL: $DEPLOY_URL"
-    - echo "VERSION: $DEPLOY_VERSION"
-    - echo "IMAGE_TAG: $IMAGE_TAG"
-    - echo "IMAGE_TAG_LATEST: $IMAGE_TAG_LATEST"
+      #- echo "IP: $DEPLOY_IP"
+      #- echo "URL: $DEPLOY_URL"
+      #- echo "VERSION: $DEPLOY_VERSION"
+      #- echo "IMAGE_TAG: $IMAGE_TAG"
+      #- echo "IMAGE_TAG_LATEST: $IMAGE_TAG_LATEST"
   when: manual
 
