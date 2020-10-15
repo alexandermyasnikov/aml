@@ -19,7 +19,7 @@ RUN git clone https://github.com/gabime/spdlog.git \
   && cmake --build ./build -j $JOBS \
   && cmake --build ./build --target install
 
-RUN git clone https://github.com/catchorg/Catch2.git \
+RUN git clone -b v2.x https://github.com/catchorg/Catch2.git \
   && cd Catch2 \
   && cmake -S. -B./build \
   && cmake --build ./build -j $JOBS \
