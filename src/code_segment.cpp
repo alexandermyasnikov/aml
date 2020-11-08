@@ -19,7 +19,8 @@ namespace aml::code_n {
 
   void cmd_t::encode() {
     // id, val -> ext, len, val
-    AML_LOGGER(debug, "cmd before: {} {} {} {:08b} {} \t {}", bits.id, bits.ext, bits.len, cmd, val, show());
+    AML_LOGGER(debug, "cmd before: {} {} {} {:08b} {} \t {}",
+        static_cast<size_t>(bits.id), static_cast<size_t>(bits.ext), static_cast<size_t>(bits.len), cmd, val, show());
     bits.ext = {};
     bits.len = {};
     switch (static_cast<cmd_id_t>(bits.id)) {
@@ -52,18 +53,19 @@ namespace aml::code_n {
         break;
       }
     }
-    AML_LOGGER(debug, "cmd after:  {} {} {} {:08b} {} \t {}", bits.id, bits.ext, bits.len, cmd, val, show());
+    AML_LOGGER(debug, "cmd after:  {} {} {} {:08b} {} \t {}",
+        static_cast<size_t>(bits.id), static_cast<size_t>(bits.ext), static_cast<size_t>(bits.len), cmd, val, show());
   }
 
   void cmd_t::decode() {
     // id, ext, len, value -> value
-    AML_LOGGER(debug, "cmd before: {} {:02x} {:08b} {}", static_cast<size_t>(bits.id), bits.id, cmd, val);
+    AML_LOGGER(debug, "cmd before: {} {:02x} {:08b} {}", static_cast<size_t>(bits.id), static_cast<size_t>(bits.id), cmd, val);
     if (bits.ext) {
       val = bits.len + -2;
     } else {
       val = zigzag_decode(val);
     }
-    AML_LOGGER(debug, "cmd after:  {} {:02x} {:08b} {}", static_cast<size_t>(bits.id), bits.id, cmd, val);
+    AML_LOGGER(debug, "cmd after:  {} {:02x} {:08b} {}", static_cast<size_t>(bits.id), static_cast<size_t>(bits.id), cmd, val);
   }
 
   std::string cmd_t::show() const {
