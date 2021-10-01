@@ -41,7 +41,7 @@ ENTRYPOINT ["./build/amlc"]
 
 
 
-FROM ubuntu:latest as aml_compact
+FROM ubuntu:20.04 as aml_compact
 COPY --from=aml_builder /aml /aml_tmp
 RUN find /aml_tmp -maxdepth 2 -name *.deb
 RUN apt install `find /aml_tmp -maxdepth 2 -name *.deb`
