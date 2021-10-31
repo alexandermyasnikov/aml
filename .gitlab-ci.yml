@@ -1,13 +1,10 @@
 variables:
   IMAGE_TAG:        $CI_REGISTRY/$CI_PROJECT_PATH/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
   IMAGE_TAG_LATEST: $CI_REGISTRY/$CI_PROJECT_PATH/$CI_COMMIT_REF_NAME:latest
-  IMAGE_TAG_STAB:   $CI_REGISTRY/$CI_DEFAULT_BRANCH:latest
 
 stages:
   - build
   - test
-  - release
-  - deploy
 
 before_script:
   - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
@@ -20,9 +17,10 @@ services:
 build:
   stage: build
   script:
-    - docker pull $IMAGE_TAG_STAB   || true
     - docker pull $IMAGE_TAG_LATEST || true
-    - docker build --cache-from $IMAGE_TAG_LATEST --cache-from $IMAGE_TAG_STAB --tag $IMAGE_TAG .
+    - docker build --cache-from $IMAGE_TAG_LATEST --tag $IMAGE_TAG .
+    - docker tag  $IMAGE_TAG $IMAGE_TAG_LATEST
+    - docker push $IMAGE_TAG_LATEST
     - docker push $IMAGE_TAG
 
 test:
@@ -30,16 +28,3 @@ test:
   script:
     - docker pull $IMAGE_TAG
     - docker run --entrypoint aml_tests $IMAGE_TAG
-
-release:
-  stage: release
-  script:
-    - docker pull $IMAGE_TAG
-    - docker tag  $IMAGE_TAG $IMAGE_TAG_LATEST
-    - docker push $IMAGE_TAG_LATEST
-
-deploy:
-  stage: deploy
-  script:
-    - echo "deploy TODO"
-
