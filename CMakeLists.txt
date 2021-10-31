@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(aml_compiler
-  VERSION 0.7
+  VERSION 0.8
   LANGUAGES CXX)
 
 
