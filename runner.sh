@@ -36,12 +36,21 @@ do
       ;;
 
     "sample_compile")
-      ./build/amlc \
-      --cmd=compile \
-      --file_input=aml/sample.aml \
-      --file_output=logs/sample.binary \
-      --log=logs/sample.compile.log \
-      --level=trace
+      export IMAGE_TAG_LATEST=aml_latest
+      export FILE_INPUT=aml/sample.aml
+      export FILE_INPUT_DIR="$(dirname($FILE_INPUT))"
+      export FILE_INPUT_SRC=$PWD/$FILE_INPUT
+      export FILE_INPUT_DST=/tmp/aml/$FILE_INPUT
+      echo $FILE_INPUT_DIR
+      docker run \
+        --volume=$FILE_INPUT_SRC:$FILE_INPUT_DST:rw \
+        --volume=logs:/logs:rw \
+        $IMAGE_TAG_LATEST \
+        --cmd=compile \
+        --file_input=$FILE_INPUT_DST \
+        --file_output=logs/sample.binary \
+        --log=a \
+        --level=trace
       ;;
 
     "sample_execute")
