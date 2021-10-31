@@ -1,6 +1,7 @@
 #include "stmt.h"
 
 #include <filesystem>
+#include <ranges>
 
 #include "logger.h"
 
