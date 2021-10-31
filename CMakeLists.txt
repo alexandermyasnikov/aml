@@ -47,7 +47,7 @@ add_library(aml SHARED ${SRCFILES})
 target_compile_options(aml PUBLIC ${FLAGS})
 target_include_directories(aml PUBLIC ${CMAKE_SOURCE_DIR}/include)
 set_target_properties(aml PROPERTIES PUBLIC_HEADER "${HDRFILES}")
-target_link_libraries(aml fmt::fmt)
+target_link_libraries(aml PRIVATE fmt::fmt-header-only -static-libgcc -static-libstdc++)
 
 
 
@@ -62,7 +62,7 @@ include(Catch)
 enable_testing()
 
 add_executable(aml_tests test/main.cpp)
-target_link_libraries(aml_tests aml)
+target_link_libraries(aml_tests PRIVATE aml -static-libgcc -static-libstdc++)
 catch_discover_tests(aml_tests WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 install(TARGETS aml amlc aml_tests
