@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <memory>
+#include <algorithm>
 
 #include "utils.h"
 
